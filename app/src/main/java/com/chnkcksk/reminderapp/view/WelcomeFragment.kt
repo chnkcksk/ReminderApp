@@ -6,7 +6,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.Navigation
+import com.chnkcksk.reminderapp.MainNavGraphDirections
 import com.chnkcksk.reminderapp.databinding.FragmentWelcomeBinding
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 
 class WelcomeFragment : Fragment() {
@@ -14,8 +18,13 @@ class WelcomeFragment : Fragment() {
     private var _binding: FragmentWelcomeBinding? = null
     private val binding get() = _binding!!
 
+    private lateinit var auth:FirebaseAuth
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        auth = Firebase.auth
+
     }
 
     override fun onCreateView(
@@ -30,6 +39,8 @@ class WelcomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        checkSession()
+
         binding.loginButton.setOnClickListener {
             val action = WelcomeFragmentDirections.actionWelcomeFragmentToLoginFragment()
             Navigation.findNavController(requireView()).navigate(action)
@@ -41,6 +52,24 @@ class WelcomeFragment : Fragment() {
         }
 
 
+
+
+    }
+
+    fun checkSession() {
+        val user = auth.currentUser
+        if (user != null) {
+            if (user.isEmailVerified) {
+                val action = MainNavGraphDirections.actionWelcomeToHome()
+                Navigation.findNavController(requireView()).navigate(action)
+            } else {
+                val action = WelcomeFragmentDirections.actionWelcomeFragmentToEmailVerifyFragment()
+                Navigation.findNavController(requireView()).navigate(action)
+
+            }
+        } else {
+
+        }
     }
 
     override fun onDestroy() {

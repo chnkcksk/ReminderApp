@@ -12,4 +12,46 @@
         android:id="@+id/core_nav_graph"
         app:graph="@navigation/core_nav_graph" />
 
+    <action
+        android:id="@+id/action_auth_to_core"
+        app:destination="@id/core_nav_graph"
+        app:popUpTo="@id/auth_nav_graph"
+        app:popUpToInclusive="true">
+    </action>
+
+
+    <!-- Login'den Settings'e direkt geçiş -->
+    <action
+        android:id="@+id/action_login_to_home"
+        app:destination="@id/core_nav_graph"
+        app:popUpTo="@id/auth_nav_graph"
+        app:popUpToInclusive="true">
+        <!-- Settings fragment'ını hedef olarak belirt -->
+        <argument
+            android:name="destination"
+            android:defaultValue="@id/homeFragment" />
+    </action>
+
+    <action
+        android:id="@+id/action_welcome_to_home"
+        app:destination="@id/core_nav_graph"
+        app:popUpTo="@id/auth_nav_graph"
+        app:popUpToInclusive="true">
+        <!-- Settings fragment'ını hedef olarak belirt -->
+        <argument
+            android:name="destination"
+            android:defaultValue="@id/homeFragment" />
+    </action>
+
+    <action
+        android:id="@+id/action_home_to_login"
+        app:destination="@id/auth_nav_graph"
+        app:popUpTo="@id/core_nav_graph"
+        app:popUpToInclusive="true">
+        <!-- Settings fragment'ını hedef olarak belirt -->
+        <argument
+            android:name="destination"
+            android:defaultValue="@id/loginFragment" />
+    </action>
+
 </navigation>

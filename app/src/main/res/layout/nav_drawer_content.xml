@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:background="@color/main_bg_color">
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/nestedScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/btnLogout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="16dp"
+                android:layout_marginBottom="16dp"
+                android:fontFamily="@font/public_sans_bold"
+                android:text="Workspaces"
+                android:textSize="18sp" />
+
+            <LinearLayout
+                android:id="@+id/personalWorkspaceButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@color/main_bg_color"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="16dp"
+                    android:backgroundTint="@color/icon_bg_color"
+                    android:elevation="0dp"
+                    app:cardCornerRadius="4dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="Menu Item Icon"
+                        android:src="@drawable/baseline_business_center_24" />
+
+                </androidx.cardview.widget.CardView>
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="16dp"
+                    android:fontFamily="@font/public_sans"
+                    android:text="Personal Workspace"
+                    android:textColorLink="@color/primary_text_color"
+                    android:textSize="16sp" />
+
+
+            </LinearLayout>
+
+
+
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
+                android:layout_width="match_parent"
+                android:nestedScrollingEnabled="false"
+                android:layout_height="wrap_content" />
+
+            <LinearLayout
+                android:id="@+id/addWorkspaceButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@color/main_bg_color"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="16dp"
+                    android:backgroundTint="@color/icon_bg_color"
+                    android:elevation="0dp"
+                    app:cardCornerRadius="4dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="Menu Item Icon"
+                        android:src="@drawable/baseline_group_add_24" />
+
+                </androidx.cardview.widget.CardView>
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="16dp"
+                    android:fontFamily="@font/public_sans"
+                    android:text="Add New"
+                    android:textColorLink="@color/primary_text_color"
+                    android:textSize="16sp" />
+
+
+            </LinearLayout>
+
+
+
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="16dp"
+                android:layout_marginLeft="16dp"
+                android:fontFamily="@font/public_sans_bold"
+                android:text="Preferences"
+                android:textSize="18sp" />
+
+            <LinearLayout
+                android:id="@+id/notificationSettingsButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@color/main_bg_color"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="16dp"
+                    android:backgroundTint="@color/icon_bg_color"
+                    android:elevation="0dp"
+                    app:cardCornerRadius="4dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="Menu Item Icon"
+                        android:src="@drawable/baseline_notifications_none_24" />
+
+                </androidx.cardview.widget.CardView>
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="16dp"
+                    android:fontFamily="@font/public_sans"
+                    android:text="Notifications"
+                    android:textColorLink="@color/primary_text_color"
+                    android:textSize="16sp" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/appPreferencesButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@color/main_bg_color"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="16dp"
+                    android:backgroundTint="@color/icon_bg_color"
+                    android:elevation="0dp"
+                    app:cardCornerRadius="4dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="Menu Item Icon"
+                        android:src="@drawable/baseline_settings_24" />
+
+                </androidx.cardview.widget.CardView>
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="16dp"
+                    android:fontFamily="@font/public_sans"
+                    android:text="App Preferences"
+                    android:textColorLink="@color/primary_text_color"
+                    android:textSize="16sp" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/passwordChangeButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@color/main_bg_color"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="16dp"
+                    android:backgroundTint="@color/icon_bg_color"
+                    android:elevation="0dp"
+                    app:cardCornerRadius="4dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="Menu Item Icon"
+                        android:src="@drawable/baseline_password_24" />
+
+                </androidx.cardview.widget.CardView>
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="16dp"
+                    android:fontFamily="@font/public_sans"
+                    android:text="Password"
+                    android:textColorLink="@color/primary_text_color"
+                    android:textSize="16sp" />
+
+
+            </LinearLayout>
+
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnLogout"
+        style="@style/custom_button_secondary"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp"
+        android:foreground="?attr/selectableItemBackground"
+        android:text="Log Out"
+        android:textAllCaps="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

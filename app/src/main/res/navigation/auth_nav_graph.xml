@@ -16,6 +16,9 @@
         <action
             android:id="@+id/action_welcomeFragment_to_registerFragment"
             app:destination="@id/registerFragment" />
+        <action
+            android:id="@+id/action_welcomeFragment_to_emailVerifyFragment"
+            app:destination="@id/emailVerifyFragment" />
     </fragment>
     <fragment
         android:id="@+id/loginFragment"
@@ -25,6 +28,12 @@
         <action
             android:id="@+id/action_loginFragment_to_welcomeFragment"
             app:destination="@id/welcomeFragment" />
+        <action
+            android:id="@+id/action_loginFragment_to_passwordResetFragment"
+            app:destination="@id/passwordResetFragment" />
+        <action
+            android:id="@+id/action_loginFragment_to_emailVerifyFragment"
+            app:destination="@id/emailVerifyFragment" />
     </fragment>
     <fragment
         android:id="@+id/registerFragment"
@@ -47,6 +56,15 @@
         tools:layout="@layout/fragment_email_verify" >
         <action
             android:id="@+id/action_emailVerifyFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/passwordResetFragment"
+        android:name="com.chnkcksk.reminderapp.view.PasswordResetFragment"
+        android:label="fragment_password_reset"
+        tools:layout="@layout/fragment_password_reset" >
+        <action
+            android:id="@+id/action_passwordResetFragment_to_loginFragment"
             app:destination="@id/loginFragment" />
     </fragment>
 </navigation>

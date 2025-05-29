@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:background="@color/main_bg_color"
+    android:foreground="?attr/selectableItemBackground"
+    android:layout_height="56dp"
+    app:cardCornerRadius="8dp">
+
+    
+        <androidx.cardview.widget.CardView
+            android:layout_width="40dp"
+            android:layout_gravity="center"
+            app:cardCornerRadius="4dp"
+            android:elevation="0dp"
+            android:layout_marginLeft="16dp"
+           android:backgroundTint="@color/icon_bg_color"
+            android:layout_height="40dp">
+
+            <ImageView
+                android:id="@+id/itemIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/baseline_group_24"
+                android:contentDescription="Menu Item Icon"/>
+
+        </androidx.cardview.widget.CardView>
+
+
+
+        <TextView
+            android:id="@+id/itemText"
+            android:layout_width="wrap_content"
+            android:text="Personal Workspace"
+            android:layout_height="wrap_content"
+            android:textColorLink="@color/primary_text_color"
+            android:fontFamily="@font/public_sans"
+            android:layout_gravity="center"
+            android:layout_marginLeft="16dp"
+            android:textSize="16sp"/>
+
+
+</LinearLayout>

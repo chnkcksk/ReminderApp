@@ -51,7 +51,7 @@
            app:layout_constraintTop_toBottomOf="@+id/textView8" />
 
        <TextView
-           android:id="@+id/textView10"
+           android:id="@+id/emailTV"
            android:layout_width="wrap_content"
            android:layout_height="wrap_content"
            android:layout_marginTop="48dp"
@@ -63,14 +63,14 @@
            app:layout_constraintTop_toBottomOf="@+id/textView9" />
 
        <androidx.appcompat.widget.AppCompatButton
-           android:id="@+id/confirmedButton"
+           android:id="@+id/checkVerifyButton"
            style="@style/custom_button_primary"
            android:layout_width="match_parent"
            android:layout_height="wrap_content"
            android:layout_marginHorizontal="16dp"
            android:layout_marginTop="132dp"
            android:text="I Confirmed My Email"
-           app:layout_constraintTop_toBottomOf="@+id/textView10"
+           app:layout_constraintTop_toBottomOf="@+id/emailTV"
            tools:layout_editor_absoluteX="16dp" />
 
        <androidx.appcompat.widget.AppCompatButton
@@ -83,7 +83,7 @@
            android:layout_marginBottom="60dp"
            android:text="Resend Verification Mail"
            app:layout_constraintBottom_toBottomOf="parent"
-           app:layout_constraintTop_toBottomOf="@+id/confirmedButton"
+           app:layout_constraintTop_toBottomOf="@+id/checkVerifyButton"
            tools:layout_editor_absoluteX="16dp" />
    </androidx.constraintlayout.widget.ConstraintLayout>
 
