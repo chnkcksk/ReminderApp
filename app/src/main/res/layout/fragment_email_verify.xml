@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:background="@color/main_bg_color"
+    android:layout_height="match_parent"
+    tools:context=".view.EmailVerifyFragment">
+
+   <androidx.constraintlayout.widget.ConstraintLayout
+       android:layout_width="match_parent"
+       android:layout_height="match_parent">
+
+
+       <ImageButton
+           android:id="@+id/backButton"
+           android:layout_width="48dp"
+           android:layout_height="48dp"
+           android:layout_marginLeft="16dp"
+           android:layout_marginTop="16dp"
+           android:background="@color/main_bg_color"
+           android:src="@drawable/baseline_arrow_back_24"
+           app:layout_constraintStart_toStartOf="parent"
+           app:layout_constraintTop_toTopOf="parent" />
+
+       <TextView
+           android:id="@+id/textView8"
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:layout_marginTop="28dp"
+           android:fontFamily="@font/public_sans_bold"
+           android:text="Email Verify"
+           android:textSize="18sp"
+           app:layout_constraintEnd_toEndOf="parent"
+           app:layout_constraintStart_toStartOf="parent"
+           app:layout_constraintTop_toTopOf="parent" />
+
+       <TextView
+           android:id="@+id/textView9"
+           android:layout_width="match_parent"
+           android:layout_height="wrap_content"
+           android:layout_marginHorizontal="16dp"
+           android:layout_marginTop="64dp"
+           android:fontFamily="@font/public_sans"
+           android:lineSpacingExtra="4dp"
+           android:gravity="center"
+           android:text="  A confirmation e-mail has been sent to your  e-mail account. Please verify your account to be able to log in to the application."
+           android:textSize="16sp"
+           app:layout_constraintEnd_toEndOf="parent"
+           app:layout_constraintStart_toStartOf="parent"
+           app:layout_constraintTop_toBottomOf="@+id/textView8" />
+
+       <TextView
+           android:id="@+id/textView10"
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:layout_marginTop="48dp"
+           android:fontFamily="@font/public_sans_bold"
+           android:text="user@email.com"
+           android:textSize="20sp"
+           app:layout_constraintEnd_toEndOf="parent"
+           app:layout_constraintStart_toStartOf="parent"
+           app:layout_constraintTop_toBottomOf="@+id/textView9" />
+
+       <androidx.appcompat.widget.AppCompatButton
+           android:id="@+id/confirmedButton"
+           style="@style/custom_button_primary"
+           android:layout_width="match_parent"
+           android:layout_height="wrap_content"
+           android:layout_marginHorizontal="16dp"
+           android:layout_marginTop="132dp"
+           android:text="I Confirmed My Email"
+           app:layout_constraintTop_toBottomOf="@+id/textView10"
+           tools:layout_editor_absoluteX="16dp" />
+
+       <androidx.appcompat.widget.AppCompatButton
+           android:id="@+id/resendEmailButton"
+           style="@style/custom_button_secondary"
+           android:layout_width="match_parent"
+           android:layout_height="wrap_content"
+           android:layout_marginHorizontal="16dp"
+           android:layout_marginTop="24dp"
+           android:layout_marginBottom="60dp"
+           android:text="Resend Verification Mail"
+           app:layout_constraintBottom_toBottomOf="parent"
+           app:layout_constraintTop_toBottomOf="@+id/confirmedButton"
+           tools:layout_editor_absoluteX="16dp" />
+   </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.core.widget.NestedScrollView>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="main_bg_color">#FCFAF7</color>
+    <color name="primary_color">#FAC738</color>
+    <color name="secondary_color">#DFCEA0</color>
+    <color name="primary_text_color">#1A170F</color>
+    <color name="secondary_text_color">#9E8747</color>
+    <color name="edittext_color">#E8E3CF</color>
+    <color name="icon_bg_color">#F5F0E5</color>
+    <color name="reminder_et_bg_color">#F5F0E5</color>
+    <color name="slider_color">#63986B</color>
+
+
+</resources>
