@@ -69,6 +69,12 @@ class AddReminderFragment : Fragment() {
             }
         }
 
+        viewModel.navigateHome.observe(viewLifecycleOwner){ navigate ->
+            if (navigate){
+                goBack()
+            }
+        }
+
     }
 
     private fun setupButtons() {
@@ -90,8 +96,7 @@ class AddReminderFragment : Fragment() {
 
         binding.addTitleET
         binding.backButton.setOnClickListener {
-            val action = AddReminderFragmentDirections.actionAddReminderFragmentToHomeFragment()
-            Navigation.findNavController(requireView()).navigate(action)
+            goBack()
         }
         binding.addDescriptionET
 
@@ -101,13 +106,17 @@ class AddReminderFragment : Fragment() {
 
 
                 override fun handleOnBackPressed() {
-                    val action =
-                        AddReminderFragmentDirections.actionAddReminderFragmentToHomeFragment()
-                    Navigation.findNavController(requireView()).navigate(action)
+                    goBack()
 
                 }
             })
 
+    }
+
+    private fun goBack(){
+        val action =
+            AddReminderFragmentDirections.actionAddReminderFragmentToHomeFragment()
+        Navigation.findNavController(requireView()).navigate(action)
     }
 
     override fun onDestroy() {

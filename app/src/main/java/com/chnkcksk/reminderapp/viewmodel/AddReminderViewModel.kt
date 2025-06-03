@@ -48,6 +48,7 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
             .add(reminder)
             .addOnSuccessListener {
                 _isLoading.value = false
+                _navigateHome.value = true
                 _toastMessage.value = "Reminder saved"
             }
             .addOnFailureListener {

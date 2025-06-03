@@ -22,10 +22,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.chnkcksk.reminderapp.MainNavGraphDirections
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.adapter.DrawerMenuAdapter
+import com.chnkcksk.reminderapp.adapter.ReminderAdapter
 import com.chnkcksk.reminderapp.databinding.FragmentHomeBinding
 import com.chnkcksk.reminderapp.databinding.NavDrawerContentBinding
 import com.chnkcksk.reminderapp.databinding.NavDrawerHeaderBinding
 import com.chnkcksk.reminderapp.model.DrawerMenuItem
+import com.chnkcksk.reminderapp.model.Reminder
 import com.chnkcksk.reminderapp.util.LoadingManager
 import com.chnkcksk.reminderapp.viewmodel.HomeViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -67,18 +69,47 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+
+        setupReminders()
+        setupLiveDatas()
         setupToolbar()
         setupDrawerMenu()
         setupButtons()
         checkSession()
     }
 
+    private fun setupReminders() {
+        viewModel.loadRemindersList()
+
+        val adapter = ReminderAdapter(requireContext(), ArrayList())
+        binding.homeRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.homeRecyclerView.adapter = adapter
+
+        viewModel.reminderList.observe(viewLifecycleOwner) { reminderList ->
+            adapter.updateList(reminderList)
+        }
+
+    }
+
+    private fun setupLiveDatas() {
+        viewModel.toastMessage.observe(viewLifecycleOwner) { message ->
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+        }
+
+        viewModel.isloading.observe(viewLifecycleOwner) { isLoading ->
+            if (isLoading) {
+                loadingManager.showLoading(requireContext())
+            } else {
+                loadingManager.dismissLoading()
+            }
+        }
+    }
+
+
     private fun setupToolbar() {
         (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
         (requireActivity() as AppCompatActivity).supportActionBar?.title = "Home"
         //(requireActivity() as AppCompatActivity).supportActionBar?.setDisplayShowTitleEnabled(false)
-
-
 
 
         drawerToggle = ActionBarDrawerToggle(
