@@ -13,6 +13,9 @@
         <action
             android:id="@+id/action_homeFragment_to_addReminderFragment"
             app:destination="@id/addReminderFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_editReminderFragment"
+            app:destination="@id/editReminderFragment" />
     </fragment>
     <fragment
         android:id="@+id/addReminderFragment"
@@ -22,5 +25,20 @@
         <action
             android:id="@+id/action_addReminderFragment_to_homeFragment"
             app:destination="@id/homeFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/editReminderFragment"
+        android:name="com.chnkcksk.reminderapp.view.EditReminderFragment"
+        android:label="fragment_edit_reminder"
+        tools:layout="@layout/fragment_edit_reminder" >
+        <action
+            android:id="@+id/action_editReminderFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+        <argument
+            android:name="workspaceId"
+            app:argType="string" />
+        <argument
+            android:name="reminderId"
+            app:argType="string" />
     </fragment>
 </navigation>

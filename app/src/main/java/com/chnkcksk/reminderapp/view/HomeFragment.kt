@@ -1,5 +1,10 @@
 package com.chnkcksk.reminderapp.view
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -47,6 +52,8 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var auth: FirebaseAuth
+    private lateinit var userName: String
+
     private lateinit var drawerMenuAdapter: DrawerMenuAdapter
     private lateinit var drawerToggle: ActionBarDrawerToggle
 
@@ -56,6 +63,8 @@ class HomeFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         auth = Firebase.auth
+
+        userName = auth.currentUser?.displayName.toString()
     }
 
     override fun onCreateView(
@@ -81,7 +90,16 @@ class HomeFragment : Fragment() {
     private fun setupReminders() {
         viewModel.loadRemindersList()
 
-        val adapter = ReminderAdapter(requireContext(), ArrayList())
+        val adapter = ReminderAdapter(
+            requireContext(),
+            "personalWorkspace",
+            ArrayList()
+        ){ workspaceId, reminderId ->
+
+            val action = HomeFragmentDirections.actionHomeFragmentToEditReminderFragment("personalWorkspace",reminderId)
+            Navigation.findNavController(requireView()).navigate(action)
+
+        }
         binding.homeRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.homeRecyclerView.adapter = adapter
 
@@ -124,11 +142,50 @@ class HomeFragment : Fragment() {
         drawerToggle.syncState()
     }
 
+    fun createInitialsAvatar(initials: String, size: Int, backgroundColor: Int, textColor: Int): Bitmap {
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        // Arka plan
+        val paint = Paint().apply {
+            color = backgroundColor
+            isAntiAlias = true
+        }
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+
+        // Yazı (baş harfler)
+        paint.apply {
+            color = textColor
+            textSize = size / 2f
+            typeface = Typeface.DEFAULT_BOLD
+            textAlign = Paint.Align.CENTER
+        }
+        val xPos = size / 2f
+        val yPos = size / 2f - (paint.descent() + paint.ascent()) / 2
+        canvas.drawText(initials, xPos, yPos, paint)
+
+        return bitmap
+    }
+
     private fun setupDrawerMenu() {
+
         // Header setup
         val headerBinding = NavDrawerHeaderBinding.bind(binding.navHeader.root)
-        headerBinding.userNameText.text = auth.currentUser?.displayName ?: "Kullanıcı"
-        //headerBinding.profileImage.setImageResource()
+        headerBinding.userNameText.text = userName
+        val initials = userName
+            .split(" ")
+            .mapNotNull { it.firstOrNull()?.toString()?.uppercase() }
+            .joinToString("")
+            .take(2) // "CK"
+
+        val avatarBitmap = createInitialsAvatar(
+            initials = initials,
+            size = 200, // px cinsinden boyut
+            backgroundColor = Color.parseColor("#DFCEA0"), // istediğin renk
+            textColor = Color.WHITE
+        )
+
+        headerBinding.profileImage.setImageBitmap(avatarBitmap)
 
         // Content setup
         val contentBinding = NavDrawerContentBinding.bind(binding.navContent.root)

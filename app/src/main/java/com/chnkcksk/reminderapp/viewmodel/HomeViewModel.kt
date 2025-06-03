@@ -26,6 +26,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _reminderList = MutableLiveData<ArrayList<Reminder>>()
     val reminderList: LiveData<ArrayList<Reminder>> get() = _reminderList
 
+
     fun loadRemindersList() {
         val currentUser = auth.currentUser
 

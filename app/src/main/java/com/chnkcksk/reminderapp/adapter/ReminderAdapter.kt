@@ -20,7 +20,13 @@ import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
-class ReminderAdapter(private val context: Context, val homeReminderList: ArrayList<Reminder>) :
+class ReminderAdapter(
+    private val context: Context,
+    private val workspaceId: String,
+    private val homeReminderList: ArrayList<Reminder>,
+    private val onItemClick: (workspaceId: String, reminderId: String) -> Unit
+
+) :
     RecyclerView.Adapter<ReminderAdapter.ReminderViewHolder>() {
 
     private val auth: FirebaseAuth = Firebase.auth
@@ -48,16 +54,31 @@ class ReminderAdapter(private val context: Context, val homeReminderList: ArrayL
         holder.binding.reminderTitleTV.text = homeReminderList[position].title
         holder.binding.reminderDateTV.text = "tarih verisi"
         holder.binding.reminderTimeTV.text = "saat verisi"
+
+        holder.itemView.setOnClickListener {
+            val position = holder.adapterPosition
+            if (position!=RecyclerView.NO_POSITION){
+                val reminderId = homeReminderList[position].id
+                onItemClick("personalWorkspace",reminderId)
+            }
+        }
+
         val isCompleted = homeReminderList[position].isCompleted == true
 
         if (isCompleted) {
-            holder.binding.reminderTitleTV.paintFlags = holder.binding.reminderTitleTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-            holder.binding.reminderDateTV.paintFlags = holder.binding.reminderDateTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-            holder.binding.reminderTimeTV.paintFlags = holder.binding.reminderTimeTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            holder.binding.reminderTitleTV.paintFlags =
+                holder.binding.reminderTitleTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            holder.binding.reminderDateTV.paintFlags =
+                holder.binding.reminderDateTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            holder.binding.reminderTimeTV.paintFlags =
+                holder.binding.reminderTimeTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
         } else {
-            holder.binding.reminderTitleTV.paintFlags = holder.binding.reminderTitleTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
-            holder.binding.reminderDateTV.paintFlags = holder.binding.reminderDateTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
-            holder.binding.reminderTimeTV.paintFlags = holder.binding.reminderTimeTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            holder.binding.reminderTitleTV.paintFlags =
+                holder.binding.reminderTitleTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            holder.binding.reminderDateTV.paintFlags =
+                holder.binding.reminderDateTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            holder.binding.reminderTimeTV.paintFlags =
+                holder.binding.reminderTimeTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
         }
 
         // Listener eklemeden önce temizle
@@ -86,24 +107,35 @@ class ReminderAdapter(private val context: Context, val homeReminderList: ArrayL
                     .document("personalWorkspace")
                     .collection("reminders")
                     .document(reminderId)
-                    .update("isCompleted",isChecked)
-                    .addOnSuccessListener{
+                    .update("isCompleted", isChecked)
+                    .addOnSuccessListener {
                         loadingManager.dismissLoading()
-                        Toast.makeText(holder.itemView.context, "Status updated: $isCompleted", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            holder.itemView.context,
+                            "Status updated: $isCompleted",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }.addOnFailureListener {
                         loadingManager.dismissLoading()
-                        Toast.makeText(holder.itemView.context, "Hata oluştu", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(holder.itemView.context, "Hata oluştu", Toast.LENGTH_SHORT)
+                            .show()
                     }
             }
 
             if (isChecked) {
-                holder.binding.reminderTitleTV.paintFlags = holder.binding.reminderTitleTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-                holder.binding.reminderDateTV.paintFlags = holder.binding.reminderDateTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-                holder.binding.reminderTimeTV.paintFlags = holder.binding.reminderTimeTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                holder.binding.reminderTitleTV.paintFlags =
+                    holder.binding.reminderTitleTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                holder.binding.reminderDateTV.paintFlags =
+                    holder.binding.reminderDateTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                holder.binding.reminderTimeTV.paintFlags =
+                    holder.binding.reminderTimeTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
             } else {
-                holder.binding.reminderTitleTV.paintFlags = holder.binding.reminderTitleTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
-                holder.binding.reminderDateTV.paintFlags = holder.binding.reminderDateTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
-                holder.binding.reminderTimeTV.paintFlags = holder.binding.reminderTimeTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                holder.binding.reminderTitleTV.paintFlags =
+                    holder.binding.reminderTitleTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                holder.binding.reminderDateTV.paintFlags =
+                    holder.binding.reminderDateTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                holder.binding.reminderTimeTV.paintFlags =
+                    holder.binding.reminderTimeTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
             }
 
         }

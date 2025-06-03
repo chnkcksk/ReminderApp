@@ -17,8 +17,7 @@
             android:id="@+id/profileImage"
             android:layout_width="60dp"
             android:layout_height="60dp"
-            android:contentDescription="Profile Image"
-            android:src="@drawable/baseline_visibility_24" />
+            android:contentDescription="Profile Image" />
 
     </androidx.cardview.widget.CardView>
 
@@ -28,7 +27,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_marginLeft="32dp"
+        android:layout_marginLeft="22dp"
         android:fontFamily="@font/public_sans_bold"
         android:text="User"
         android:textSize="18sp" />

@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/main_bg_color"
-    tools:context=".view.AddReminderFragment">
+    tools:context=".view.EditReminderFragment">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -26,31 +26,43 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/textView10"
+            android:id="@+id/textView15"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:fontFamily="@font/public_sans_bold"
-            android:text="New Reminder"
+            android:text="Edit Reminder"
             android:textSize="18sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <ImageButton
+            android:id="@+id/deleteReminderButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginRight="16dp"
+            android:background="@color/main_bg_color"
+            android:src="@drawable/baseline_delete_outline_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <EditText
-            android:id="@+id/addTitleET"
+            android:id="@+id/editTitleET"
             style="@style/CustomEditTextStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
-            android:layout_marginTop="28dp"
             android:hint="Title"
+            android:layout_marginTop="28dp"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.843"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textView10" />
+            app:layout_constraintTop_toBottomOf="@+id/textView15" />
 
         <EditText
-            android:id="@+id/addDescriptionET"
+            android:id="@+id/editDescriptionET"
             style="@style/CustomEditTextStyle"
             android:layout_width="match_parent"
             android:layout_height="144dp"
@@ -63,10 +75,10 @@
             android:paddingTop="10dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/addTitleET" />
+            app:layout_constraintTop_toBottomOf="@+id/editTitleET" />
 
         <TextView
-            android:id="@+id/textView13"
+            android:id="@+id/textView17"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="16dp"
@@ -75,7 +87,7 @@
             android:text="Details"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/addDescriptionET" />
+            app:layout_constraintTop_toBottomOf="@+id/editDescriptionET" />
 
         <LinearLayout
             android:id="@+id/linearLayout"
@@ -84,7 +96,7 @@
             android:layout_marginTop="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textView13">
+            app:layout_constraintTop_toBottomOf="@+id/textView17">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -240,18 +252,20 @@
         </LinearLayout>
 
         <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/addReminderButton"
+            android:id="@+id/editReminderButton"
             style="@style/custom_button_primary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
             android:layout_marginTop="50dp"
-            android:text="Add"
+            android:text="Edit"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayout6" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+
 
 
 </androidx.core.widget.NestedScrollView>
