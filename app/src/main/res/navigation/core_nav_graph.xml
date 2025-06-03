@@ -9,5 +9,18 @@
         android:id="@+id/homeFragment"
         android:name="com.chnkcksk.reminderapp.view.HomeFragment"
         android:label="fragment_home"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_home" >
+        <action
+            android:id="@+id/action_homeFragment_to_addReminderFragment"
+            app:destination="@id/addReminderFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/addReminderFragment"
+        android:name="com.chnkcksk.reminderapp.view.AddReminderFragment"
+        android:label="fragment_add_reminder"
+        tools:layout="@layout/fragment_add_reminder" >
+        <action
+            android:id="@+id/action_addReminderFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+    </fragment>
 </navigation>

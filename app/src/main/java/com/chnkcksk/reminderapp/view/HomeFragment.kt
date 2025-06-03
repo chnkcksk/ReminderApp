@@ -175,6 +175,11 @@ class HomeFragment : Fragment() {
 
     private fun setupButtons() {
 
+        binding.homeAddFAB.setOnClickListener {
+            val action = HomeFragmentDirections.actionHomeFragmentToAddReminderFragment()
+            Navigation.findNavController(requireView()).navigate(action)
+        }
+
         requireActivity().onBackPressedDispatcher.addCallback(
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {

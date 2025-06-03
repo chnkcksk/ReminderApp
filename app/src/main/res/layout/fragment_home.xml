@@ -20,10 +20,51 @@
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="@color/main_bg_color"/>
+                android:background="@color/main_bg_color">
+
+                <TextView
+                    android:id="@+id/toolbar_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="40dp"
+                    android:fontFamily="@font/public_sans_bold"
+                    android:gravity="center"
+                    android:text="Home"
+                    android:textSize="18sp" />
+
+            </androidx.appcompat.widget.Toolbar>
 
         </com.google.android.material.appbar.AppBarLayout>
 
+        <TextView
+            android:id="@+id/textView6"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:fontFamily="@font/public_sans_bold"
+            android:text="Personal"
+            android:textSize="18sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/appBarLayout" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/homeRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textView6" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/homeAddFAB"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginRight="16dp"
+            android:backgroundTint="@color/primary_color"
+            android:src="@drawable/baseline_add_24"
+            android:layout_marginBottom="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
@@ -32,17 +73,17 @@
         android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:orientation="vertical"
         android:background="@android:color/white"
-        android:elevation="8dp">
+        android:elevation="8dp"
+        android:orientation="vertical">
 
         <include
             android:id="@+id/nav_header"
-            layout="@layout/nav_drawer_header"/>
+            layout="@layout/nav_drawer_header" />
 
         <include
             android:id="@+id/nav_content"
-            layout="@layout/nav_drawer_content"/>
+            layout="@layout/nav_drawer_content" />
 
     </LinearLayout>
 
