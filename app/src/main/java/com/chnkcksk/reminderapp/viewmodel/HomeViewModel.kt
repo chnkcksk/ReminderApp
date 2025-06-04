@@ -49,7 +49,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                             title = document.getString("title") ?: "",
                             description = document.getString("description") ?: "",
                             isCompleted = document.getBoolean("isCompleted") ?: false,
-                            timestamp = document.get("timestamp").toString() ?: ""
+                            timestamp = document.get("timestamp").toString() ?: "",
+                            priority = document.getString("priority") ?: "",
+                            date = document.getString("date") ?: "",
+                            time = document.getString("time") ?: ""
                         )
                         reminderList.add(reminder)
                     }

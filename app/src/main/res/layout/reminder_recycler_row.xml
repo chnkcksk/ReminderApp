@@ -19,6 +19,7 @@
             android:id="@+id/reminderTitleTV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:maxLength="30"
             android:fontFamily="@font/public_sans"
             android:textSize="16sp"
             android:text="Grocery Shopping"/>
@@ -46,6 +47,17 @@
 
 
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/priorityTV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:layout_gravity="center"
+        android:layout_marginRight="8dp"
+        android:textSize="14sp"
+        android:fontFamily="@font/public_sans_bold"/>
+
 
     <Switch
         android:id="@+id/switchButton"

@@ -52,14 +52,42 @@ class ReminderAdapter(
     override fun onBindViewHolder(holder: ReminderViewHolder, position: Int) {
 
         holder.binding.reminderTitleTV.text = homeReminderList[position].title
-        holder.binding.reminderDateTV.text = "tarih verisi"
-        holder.binding.reminderTimeTV.text = "saat verisi"
+        holder.binding.reminderDateTV.text = "${homeReminderList[position].date}, "
+        holder.binding.reminderTimeTV.text = homeReminderList[position].time
+
+        val priority = homeReminderList[position].priority
+
+        if (priority == "High") {
+            holder.binding.priorityTV.text = "H"
+            holder.binding.priorityTV.setTextColor(ContextCompat.getColor(context,R.color.red))
+        } else if (priority == "Medium") {
+            holder.binding.priorityTV.text = "M"
+            holder.binding.priorityTV.setTextColor(ContextCompat.getColor(context,R.color.orange))
+        } else if (priority == "Low") {
+            holder.binding.priorityTV.text = "L"
+            holder.binding.priorityTV.setTextColor(ContextCompat.getColor(context,R.color.green))
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         holder.itemView.setOnClickListener {
             val position = holder.adapterPosition
-            if (position!=RecyclerView.NO_POSITION){
+            if (position != RecyclerView.NO_POSITION) {
                 val reminderId = homeReminderList[position].id
-                onItemClick("personalWorkspace",reminderId)
+                onItemClick("personalWorkspace", reminderId)
             }
         }
 

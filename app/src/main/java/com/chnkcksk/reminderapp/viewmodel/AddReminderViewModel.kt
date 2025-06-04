@@ -20,24 +20,33 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
     val toastMessage: LiveData<String> get() = _toastMessage
 
     private val _navigateHome = MutableLiveData<Boolean>()
-    val navigateHome : LiveData<Boolean> get() = _navigateHome
+    val navigateHome: LiveData<Boolean> get() = _navigateHome
 
 
-    fun addReminder(title:String, description:String){
+    fun addReminder(
+        title: String,
+        description: String,
+        priority: String,
+        date: String,
+        time: String
+    ) {
 
         _isLoading.value = true
 
         val currentUser = auth.currentUser
 
-        if (currentUser==null){
+        if (currentUser == null) {
             _toastMessage.value = "User login required"
             return
         }
         val reminder = hashMapOf(
             "title" to title,
-            "description" to  description,
+            "description" to description,
             "timestamp" to System.currentTimeMillis(),
-            "isCompleted" to false
+            "isCompleted" to false,
+            "priority" to priority,
+            "date" to date,
+            "time" to time
         )
 
         firestore.collection("Users")
@@ -55,7 +64,6 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
                 _isLoading.value = false
                 _toastMessage.value = "Reminder could not be saved!"
             }
-
 
 
     }

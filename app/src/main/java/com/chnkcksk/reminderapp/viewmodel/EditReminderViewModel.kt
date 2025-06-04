@@ -31,6 +31,18 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
     private val _navigateHome = MutableLiveData<Boolean>()
     val navigateHome : LiveData<Boolean> get() = _navigateHome
 
+    //priority,date,time
+
+    private val _priority = MutableLiveData<String>()
+    val priority : LiveData<String> get() = _priority
+
+    private val _selectedDate = MutableLiveData<String>()
+    val selectedDate : LiveData<String> get() = _selectedDate
+
+    private val _selectedTime = MutableLiveData<String>()
+    val selectedTime : LiveData<String> get() = _selectedTime
+
+
     private val currentUser = auth.currentUser
 
     fun deleteReminder(workspaceId:String?, reminderId:String?){
@@ -85,8 +97,12 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
                 .addOnSuccessListener { doc ->
                     if (doc!=null && doc.exists()){
 
+                        //priority,date,time
                         _title.value = doc.getString("title")
                         _description.value = doc.getString("description")
+                        _priority.value = doc.getString("priority")
+                        _selectedDate.value = doc.getString("date")
+                        _selectedTime.value = doc.getString("time")
 
                         _isLoading.value = false
                     }

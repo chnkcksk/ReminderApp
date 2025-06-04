@@ -109,10 +109,14 @@
                 android:textSize="16sp" />
 
             <TextView
+                android:id="@+id/editReminderDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_marginRight="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:padding="16dp"
                 android:fontFamily="@font/public_sans"
                 android:text="Today"
                 android:textSize="16sp" />
@@ -139,18 +143,24 @@
                 android:textSize="16sp" />
 
             <TextView
+                android:id="@+id/editReminderTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_marginRight="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:padding="16dp"
                 android:fontFamily="@font/public_sans"
                 android:text="9:00 AM"
                 android:textSize="16sp" />
 
         </LinearLayout>
 
+
+
         <LinearLayout
-            android:id="@+id/linearLayout4"
+            android:id="@+id/linearLayout5"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -165,44 +175,19 @@
                 android:layout_marginLeft="16dp"
                 android:layout_weight="1"
                 android:fontFamily="@font/public_sans"
-                android:text="Repeat"
-                android:textSize="16sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginRight="16dp"
-                android:fontFamily="@font/public_sans"
-                android:text="Never"
-                android:textSize="16sp" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/linearLayout5"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/linearLayout4">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginLeft="16dp"
-                android:layout_weight="1"
-                android:fontFamily="@font/public_sans"
                 android:text="Priority"
                 android:textSize="16sp" />
 
-            <TextView
+            <Spinner
+                android:id="@+id/prioritySpinner"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_marginRight="16dp"
+                android:padding="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:background="@color/main_bg_color"
                 android:fontFamily="@font/public_sans"
                 android:text="None"
                 android:textSize="16sp" />
@@ -258,7 +243,9 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
             android:layout_marginTop="50dp"
+            android:layout_marginBottom="60dp"
             android:text="Edit"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayout6" />
