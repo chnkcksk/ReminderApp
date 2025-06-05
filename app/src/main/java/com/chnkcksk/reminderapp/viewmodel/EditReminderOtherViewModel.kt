@@ -4,14 +4,13 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.chnkcksk.reminderapp.model.Reminder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
-class EditReminderViewModel(application: Application) : AndroidViewModel(application) {
+class EditReminderOtherViewModel(application: Application) : AndroidViewModel(application) {
 
     private val auth: FirebaseAuth = Firebase.auth
     private val firestore: FirebaseFirestore = Firebase.firestore
@@ -42,19 +41,21 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
     private val _selectedTime = MutableLiveData<String>()
     val selectedTime: LiveData<String> get() = _selectedTime
 
+    private val _workspaceName = MutableLiveData<String>()
+    val workspaceName: LiveData<String> get() = _workspaceName
+
+    private val _workspaceType = MutableLiveData<String>()
+    val workspaceType: LiveData<String> get() = _workspaceType
+
 
     private val currentUser = auth.currentUser
 
     fun deleteReminder(workspaceId: String?, reminderId: String?) {
         if (currentUser != null && workspaceId != null && reminderId != null) {
 
-            val userId = currentUser.uid
-
             _isLoading.value = true
 
-            firestore.collection("Users")
-                .document(userId)
-                .collection("workspaces")
+            firestore.collection("workspaces")
                 .document(workspaceId)
                 .collection("reminders")
                 .document(reminderId)
@@ -76,6 +77,31 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    fun loadWorkspaceData(workspaceId: String?) {
+
+        if (currentUser == null) {
+            return
+        }
+
+        _isLoading.value = true
+
+        if (workspaceId != null) {
+            firestore.collection("workspaces")
+                .document(workspaceId)
+                .get()
+                .addOnSuccessListener { doc ->
+                    _isLoading.value = false
+                    _workspaceName.value = doc.getString("workspaceName") ?: ""
+                    _workspaceType.value = doc.getString("workspaceType") ?: ""
+                }
+                .addOnFailureListener {
+                    _isLoading.value = false
+                }
+        }
+
+
+    }
+
     fun editReminderData(
         workspaceId: String?,
         reminderId: String?,
@@ -86,13 +112,11 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
         time: String
     ) {
 
-
+        _isLoading.value = true
 
         if (currentUser != null && workspaceId != null && reminderId != null) {
 
             val userId = currentUser.uid
-
-            _isLoading.value = true
 
             val updatedData = hashMapOf<String, Any>(
                 "title" to title,
@@ -103,7 +127,6 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
             )
 
             firestore
-                .collection("Users").document(userId)
                 .collection("workspaces").document(workspaceId)
                 .collection("reminders").document(reminderId)
                 .update(updatedData)
@@ -125,16 +148,11 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
 
     fun loadReminderData(workspaceId: String?, reminderId: String?) {
 
-
+        _isLoading.value = true
 
         if (currentUser != null && workspaceId != null && reminderId != null) {
-            val userId = currentUser.uid
 
-            _isLoading.value = true
-
-            firestore.collection("Users")
-                .document(userId)
-                .collection("workspaces")
+            firestore.collection("workspaces")
                 .document(workspaceId)
                 .collection("reminders")
                 .document(reminderId)
@@ -162,5 +180,4 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
         }
 
     }
-
 }

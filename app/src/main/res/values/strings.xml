@@ -11,6 +11,16 @@
         <item>High</item>
     </string-array>
 
+    <string-array name="editable_type">
+        <item>Editable</item>
+        <item>Read only</item>
+    </string-array>
+
+    <string-array name="workspace_type">
+        <item>Group</item>
+        <item>Personal</item>
+    </string-array>
+
     <string name="default_web_client_id">870944994497-2ummjrii91gfinekkf78gtrcaq10hlgf.apps.googleusercontent.com</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>

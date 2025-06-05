@@ -10,7 +10,7 @@ import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.model.DrawerMenuItem
 
 class DrawerMenuAdapter(
-    private val items: List<DrawerMenuItem>,
+    private var items: ArrayList<DrawerMenuItem>,
     private val onItemClick: (DrawerMenuItem) -> Unit
 ) : RecyclerView.Adapter<DrawerMenuAdapter.ViewHolder>() {
 
@@ -27,10 +27,40 @@ class DrawerMenuAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.icon.setImageResource(item.iconResId)
-        holder.text.text = item.text
+        holder.text.text = item.title
+
+        // Workspace tipine göre icon ayarlayabilirsiniz
+        when (item.workspaceType) {
+            "Group" -> {
+                // Personal workspace icon
+                holder.icon.setImageResource(R.drawable.baseline_group_24) // kendi icon'unuzu kullanın
+            }
+            "Personal" -> {
+                // Shared workspace icon
+                holder.icon.setImageResource(R.drawable.baseline_person_24) // kendi icon'unuzu kullanın
+            }
+            else -> {
+                // Default icon
+                holder.icon.setImageResource(R.drawable.baseline_person_24) // kendi icon'unuzu kullanın
+            }
+        }
+
         holder.itemView.setOnClickListener { onItemClick(item) }
     }
 
     override fun getItemCount() = items.size
-} 
+
+    // Yeni workspace listesi geldiğinde adapter'ı güncelleme fonksiyonu
+    fun updateList(newItems: ArrayList<DrawerMenuItem>) {
+        android.util.Log.d("DrawerMenuAdapter", "updateList called with ${newItems.size} items")
+        newItems.forEach { item ->
+            android.util.Log.d("DrawerMenuAdapter", "Item: ${item.title} - ${item.workspaceType}")
+        }
+
+        items.clear()
+        items.addAll(newItems)
+        notifyDataSetChanged()
+
+        android.util.Log.d("DrawerMenuAdapter", "Adapter updated, current item count: ${items.size}")
+    }
+}

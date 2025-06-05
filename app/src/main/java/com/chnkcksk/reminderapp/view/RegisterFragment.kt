@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
@@ -85,6 +86,18 @@ class RegisterFragment : Fragment() {
             val action = RegisterFragmentDirections.actionRegisterFragmentToWelcomeFragment()
             Navigation.findNavController(requireView()).navigate(action)
         }
+
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+
+
+                override fun handleOnBackPressed() {
+                    val action = RegisterFragmentDirections.actionRegisterFragmentToWelcomeFragment()
+                    Navigation.findNavController(requireView()).navigate(action)
+
+                }
+            })
 
         binding.registerButton.setOnClickListener {
             val name = binding.registerNameET.text.toString()

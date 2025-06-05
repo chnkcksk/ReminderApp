@@ -79,6 +79,7 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
 
+
         setupReminders()
         setupLiveDatas()
         setupToolbar()
@@ -93,10 +94,16 @@ class HomeFragment : Fragment() {
         val adapter = ReminderAdapter(
             requireContext(),
             "personalWorkspace",
+            "Editable",
+            true,
             ArrayList()
-        ){ workspaceId, reminderId ->
+        ){ reminder ->
 
-            val action = HomeFragmentDirections.actionHomeFragmentToEditReminderFragment("personalWorkspace",reminderId)
+            // Fragment burada kontrolü eline alıyor
+            val workspaceId = "personalWorkspace" // Eğer bu sabitse
+            val reminderId = reminder.id
+
+            val action = HomeFragmentDirections.actionHomeFragmentToEditReminderFragment(workspaceId,reminderId)
             Navigation.findNavController(requireView()).navigate(action)
 
         }
@@ -123,7 +130,6 @@ class HomeFragment : Fragment() {
         }
     }
 
-
     private fun setupToolbar() {
         (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
         (requireActivity() as AppCompatActivity).supportActionBar?.title = "Home"
@@ -142,32 +148,11 @@ class HomeFragment : Fragment() {
         drawerToggle.syncState()
     }
 
-    fun createInitialsAvatar(initials: String, size: Int, backgroundColor: Int, textColor: Int): Bitmap {
-        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
 
-        // Arka plan
-        val paint = Paint().apply {
-            color = backgroundColor
-            isAntiAlias = true
-        }
-        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
-
-        // Yazı (baş harfler)
-        paint.apply {
-            color = textColor
-            textSize = size / 2f
-            typeface = Typeface.DEFAULT_BOLD
-            textAlign = Paint.Align.CENTER
-        }
-        val xPos = size / 2f
-        val yPos = size / 2f - (paint.descent() + paint.ascent()) / 2
-        canvas.drawText(initials, xPos, yPos, paint)
-
-        return bitmap
-    }
+    // HomeFragment.kt - setupDrawerMenu() fonksiyonunda debugging ekleyin
 
     private fun setupDrawerMenu() {
+        viewModel.loadWorkspaces()
 
         // Header setup
         val headerBinding = NavDrawerHeaderBinding.bind(binding.navHeader.root)
@@ -176,12 +161,12 @@ class HomeFragment : Fragment() {
             .split(" ")
             .mapNotNull { it.firstOrNull()?.toString()?.uppercase() }
             .joinToString("")
-            .take(2) // "CK"
+            .take(2)
 
         val avatarBitmap = createInitialsAvatar(
             initials = initials,
-            size = 200, // px cinsinden boyut
-            backgroundColor = Color.parseColor("#DFCEA0"), // istediğin renk
+            size = 200,
+            backgroundColor = Color.parseColor("#DFCEA0"),
             textColor = Color.WHITE
         )
 
@@ -191,44 +176,53 @@ class HomeFragment : Fragment() {
         val contentBinding = NavDrawerContentBinding.bind(binding.navContent.root)
 
         contentBinding.personalWorkspaceButton.setOnClickListener {
-
             binding.drawerLayout.closeDrawers()
         }
         contentBinding.addWorkspaceButton.setOnClickListener {
-
+            val action = HomeFragmentDirections.actionHomeFragmentToAddWorkspaceFragment()
+            Navigation.findNavController(requireView()).navigate(action)
         }
         contentBinding.notificationSettingsButton.setOnClickListener {
-
+            // TODO: Implement notification settings
         }
         contentBinding.appPreferencesButton.setOnClickListener {
-
+            // TODO: Implement app preferences
         }
         contentBinding.passwordChangeButton.setOnClickListener {
-
+            // TODO: Implement password change
         }
 
+        // Workspace adapter'ını boş DrawerMenuItem listesi ile başlat
+        drawerMenuAdapter = DrawerMenuAdapter(ArrayList<DrawerMenuItem>()) { item ->
+            // Workspace item'a tıklandığında yapılacak işlemler
+            Toast.makeText(requireContext(), "Selected workspace: ${item.title}", Toast.LENGTH_SHORT).show()
 
-        // RecyclerView setup
-        val menuItems = listOf(
-            DrawerMenuItem(1, "Hatırlatıcılarım", R.drawable.baseline_group_24),
-            DrawerMenuItem(2, "Kategoriler", R.drawable.baseline_group_24),
-            DrawerMenuItem(3, "İstatistikler", R.drawable.baseline_group_24),
-            DrawerMenuItem(4, "Yardım", R.drawable.baseline_group_24)
-        )
-
-        drawerMenuAdapter = DrawerMenuAdapter(menuItems) { item ->
-            when (item.id) {
-                1 -> Toast.makeText(context, "Hatırlatıcılarım", Toast.LENGTH_SHORT).show()
-                2 -> Toast.makeText(context, "Kategoriler", Toast.LENGTH_SHORT).show()
-                3 -> Toast.makeText(context, "İstatistikler", Toast.LENGTH_SHORT).show()
-                4 -> Toast.makeText(context, "Yardım", Toast.LENGTH_SHORT).show()
-            }
+            val action = HomeFragmentDirections.actionHomeFragmentToOtherWorkspaceFragment(item.id)
+            Navigation.findNavController(requireView()).navigate(action)
+            // Burada workspace'e göre veri yükleme işlemleri yapabilirsiniz
+            // Örneğin: loadWorkspaceReminders(item.id)
             binding.drawerLayout.closeDrawers()
         }
 
-        contentBinding.recyclerView.apply {
+        contentBinding.drawerRecyclerView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = drawerMenuAdapter
+        }
+
+        // Workspace listesini observe et - DEBUG EKLEYIN
+        viewModel.workspaceList.observe(viewLifecycleOwner) { workspaceList ->
+            // DEBUG: Veri gelip gelmediğini kontrol edin
+            android.util.Log.d("HomeFragment", "Workspace list size: ${workspaceList?.size}")
+            workspaceList?.forEach { workspace ->
+                android.util.Log.d("HomeFragment", "Workspace: ${workspace.title} - Type: ${workspace.workspaceType}")
+            }
+
+            if (workspaceList != null && workspaceList.isNotEmpty()) {
+                drawerMenuAdapter.updateList(workspaceList)
+                android.util.Log.d("HomeFragment", "Adapter updated with ${workspaceList.size} items")
+            } else {
+                android.util.Log.d("HomeFragment", "Workspace list is empty or null")
+            }
         }
 
         // Logout button click listener
@@ -242,7 +236,7 @@ class HomeFragment : Fragment() {
                     signOut()
                 }
                 .setNegativeButton("No") { _, _ ->
-
+                    // Do nothing
                 }.show()
         }
     }
@@ -297,6 +291,31 @@ class HomeFragment : Fragment() {
                     }
                 }
             })
+    }
+
+    fun createInitialsAvatar(initials: String, size: Int, backgroundColor: Int, textColor: Int): Bitmap {
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        // Arka plan
+        val paint = Paint().apply {
+            color = backgroundColor
+            isAntiAlias = true
+        }
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+
+        // Yazı (baş harfler)
+        paint.apply {
+            color = textColor
+            textSize = size / 2f
+            typeface = Typeface.DEFAULT_BOLD
+            textAlign = Paint.Align.CENTER
+        }
+        val xPos = size / 2f
+        val yPos = size / 2f - (paint.descent() + paint.ascent()) / 2
+        canvas.drawText(initials, xPos, yPos, paint)
+
+        return bitmap
     }
 
     private fun signOut() {

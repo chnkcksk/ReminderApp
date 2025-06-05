@@ -105,7 +105,7 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
-                android:fontFamily="@font/public_sans"
+                android:fontFamily="@font/public_sans_bold"
                 android:text="Today"
                 android:textSize="16sp" />
 
@@ -139,7 +139,7 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
-                android:fontFamily="@font/public_sans"
+                android:fontFamily="@font/public_sans_bold"
                 android:text="9:00 AM"
                 android:textSize="16sp" />
 
@@ -176,7 +176,7 @@
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
                 android:background="@color/main_bg_color"
-                android:fontFamily="@font/public_sans"
+                android:fontFamily="@font/public_sans_bold"
                 android:text="None"
                 android:textSize="16sp" />
 
@@ -210,16 +210,17 @@
                 android:layout_marginLeft="16dp"
                 android:layout_weight="1"
                 android:fontFamily="@font/public_sans"
-                android:text="Workspace Name"
+                android:text="Name"
                 android:textSize="16sp" />
 
             <TextView
+                android:id="@+id/workspaceNameET"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_marginRight="16dp"
                 android:fontFamily="@font/public_sans"
-                android:text="Personal"
+                android:text="Personal Workspace"
                 android:textSize="16sp" />
 
         </LinearLayout>

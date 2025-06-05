@@ -15,11 +15,10 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentEditReminderBinding
-import com.chnkcksk.reminderapp.databinding.FragmentHomeBinding
+import com.chnkcksk.reminderapp.databinding.FragmentEditReminderOtherBinding
 import com.chnkcksk.reminderapp.util.LoadingManager
-import com.chnkcksk.reminderapp.viewmodel.EditReminderViewModel
+import com.chnkcksk.reminderapp.viewmodel.EditReminderOtherViewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.auth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
@@ -29,9 +28,9 @@ import java.util.Calendar
 import java.util.Locale
 
 
-class EditReminderFragment : Fragment() {
+class EditReminderOtherFragment : Fragment() {
 
-    private var _binding: FragmentEditReminderBinding? = null
+    private var _binding: FragmentEditReminderOtherBinding? = null
     private val binding get() = _binding!!
 
     private lateinit var auth: FirebaseAuth
@@ -42,7 +41,7 @@ class EditReminderFragment : Fragment() {
 
     private val loadingManager = LoadingManager.getInstance()
 
-    private val viewModel: EditReminderViewModel by viewModels()
+    private val viewModel: EditReminderOtherViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,8 +50,8 @@ class EditReminderFragment : Fragment() {
         firestore = Firebase.firestore
 
         arguments?.let {
-            workspaceId = EditReminderFragmentArgs.fromBundle(it).workspaceId
-            reminderId = EditReminderFragmentArgs.fromBundle(it).reminderId
+            workspaceId = EditReminderOtherFragmentArgs.fromBundle(it).workspaceId
+            reminderId = EditReminderOtherFragmentArgs.fromBundle(it).reminderId
         }
     }
 
@@ -60,7 +59,7 @@ class EditReminderFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        _binding = FragmentEditReminderBinding.inflate(inflater, container, false)
+        _binding = FragmentEditReminderOtherBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -69,6 +68,7 @@ class EditReminderFragment : Fragment() {
 
 
         viewModel.loadReminderData(workspaceId, reminderId)
+        viewModel.loadWorkspaceData(workspaceId)
 
         setupSpinner()
         setupDateAndTimePicker()
@@ -84,7 +84,7 @@ class EditReminderFragment : Fragment() {
 
         // Başlangıçta TextView'lara varsayılan tarih ve saat ata
         // Tarih seçici
-        binding.editReminderDate.setOnClickListener {
+        binding.editReminderODate.setOnClickListener {
             val year = calendar.get(Calendar.YEAR)
             val month = calendar.get(Calendar.MONTH)
             val day = calendar.get(Calendar.DAY_OF_MONTH)
@@ -95,7 +95,7 @@ class EditReminderFragment : Fragment() {
                     calendar.set(Calendar.YEAR, selectedYear)
                     calendar.set(Calendar.MONTH, selectedMonth)
                     calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
-                    binding.editReminderDate.text = dateFormat.format(calendar.time)
+                    binding.editReminderODate.text = dateFormat.format(calendar.time)
                 },
                 year, month, day
             )
@@ -103,7 +103,7 @@ class EditReminderFragment : Fragment() {
         }
 
         // Saat seçici
-        binding.editReminderTime.setOnClickListener {
+        binding.editReminderOTime.setOnClickListener {
             val hour = calendar.get(Calendar.HOUR_OF_DAY)
             val minute = calendar.get(Calendar.MINUTE)
 
@@ -112,7 +112,7 @@ class EditReminderFragment : Fragment() {
                 { _, selectedHour, selectedMinute ->
                     calendar.set(Calendar.HOUR_OF_DAY, selectedHour)
                     calendar.set(Calendar.MINUTE, selectedMinute)
-                    binding.editReminderTime.text = timeFormat.format(calendar.time)
+                    binding.editReminderOTime.text = timeFormat.format(calendar.time)
                 },
                 hour, minute, true // 24 saat formatı
             )
@@ -126,7 +126,7 @@ class EditReminderFragment : Fragment() {
         val adapter =
             ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, priorities)
         adapter.setDropDownViewResource(R.layout.custom_spinner_item)
-        binding.prioritySpinner.adapter = adapter
+        binding.priorityOSpinner.adapter = adapter
 
     }
 
@@ -136,10 +136,10 @@ class EditReminderFragment : Fragment() {
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
         viewModel.title.observe(viewLifecycleOwner) { title ->
-            binding.editTitleET.setText(title)
+            binding.editTitleOET.setText(title)
         }
         viewModel.description.observe(viewLifecycleOwner) { desc ->
-            binding.editDescriptionET.setText(desc)
+            binding.editDescriptionOET.setText(desc)
         }
         viewModel.isloading.observe(viewLifecycleOwner) { isLoading ->
             if (isLoading == true) {
@@ -165,7 +165,7 @@ class EditReminderFragment : Fragment() {
                 else -> 0 // default
             }
 
-            binding.prioritySpinner.setSelection(selectedIndex)
+            binding.priorityOSpinner.setSelection(selectedIndex)
         }
         viewModel.selectedDate.observe(viewLifecycleOwner) { selectedDateString ->
             try {
@@ -179,7 +179,7 @@ class EditReminderFragment : Fragment() {
                 val day = calendar.get(Calendar.DAY_OF_MONTH)
 
                 // TextView'a yaz
-                binding.editReminderDate.text = selectedDateString
+                binding.editReminderODate.text = selectedDateString
 
 //                // İstersen burada DatePickerDialog açabilirsin:
 //                DatePickerDialog(requireContext(), { _, y, m, d ->
@@ -201,7 +201,7 @@ class EditReminderFragment : Fragment() {
                 val minute = calendar.get(Calendar.MINUTE)
 
                 // TextView'a yaz
-                binding.editReminderTime.text = selectedTimeString
+                binding.editReminderOTime.text = selectedTimeString
 
 //                // İstersen burada TimePickerDialog açabilirsin:
 //                TimePickerDialog(requireContext(), { _, h, m ->
@@ -211,6 +211,12 @@ class EditReminderFragment : Fragment() {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+        viewModel.workspaceName.observe(viewLifecycleOwner) { workspaceName ->
+            binding.workspaceNameOET.text = workspaceName
+        }
+        viewModel.workspaceType.observe(viewLifecycleOwner) { workspaceType ->
+            binding.workspaceTypeOTV.text = workspaceType
         }
 
 
@@ -223,12 +229,12 @@ class EditReminderFragment : Fragment() {
                 goBack()
             }
 
-            editReminderButton.setOnClickListener {
-                val title = binding.editTitleET.text.toString()
-                val desc = binding.editDescriptionET.text.toString()
-                val priority = binding.prioritySpinner.selectedItem.toString()
-                val date = binding.editReminderDate.text.toString()
-                val time = binding.editReminderTime.text.toString()
+            editReminderOButton.setOnClickListener {
+                val title = binding.editTitleOET.text.toString()
+                val desc = binding.editDescriptionOET.text.toString()
+                val priority = binding.priorityOSpinner.selectedItem.toString()
+                val date = binding.editReminderODate.text.toString()
+                val time = binding.editReminderOTime.text.toString()
 
                 viewModel.editReminderData(
                     workspaceId,
@@ -239,19 +245,6 @@ class EditReminderFragment : Fragment() {
                     date,
                     time
                 )
-            }
-
-            deleteReminderButton.setOnClickListener {
-
-                AlertDialog.Builder(requireContext())
-                    .setTitle("Are You Sure?")
-                    .setMessage("Are you sure you want to delete the reminder?")
-                    .setPositiveButton("Yes") { _, _ ->
-                        viewModel.deleteReminder(workspaceId, reminderId)
-                    }.setNegativeButton("No", null)
-                    .show()
-
-
             }
 
             requireActivity().onBackPressedDispatcher.addCallback(
@@ -265,18 +258,37 @@ class EditReminderFragment : Fragment() {
                     }
                 })
 
+            deleteReminderOButton.setOnClickListener {
+
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Are You Sure?")
+                    .setMessage("Are you sure you want to delete the reminder?")
+                    .setPositiveButton("Yes") { _, _ ->
+                        viewModel.deleteReminder(workspaceId, reminderId)
+                    }.setNegativeButton("No", null)
+                    .show()
+
+
+            }
+
         }
 
     }
 
 
     private fun goBack() {
-        val action = EditReminderFragmentDirections.actionEditReminderFragmentToHomeFragment()
+        val action =
+            EditReminderOtherFragmentDirections.actionEditReminderOtherFragmentToOtherWorkspaceFragment(
+                workspaceId!!
+            )
         Navigation.findNavController(requireView()).navigate(action)
     }
+
 
     override fun onDestroy() {
         super.onDestroy()
         _binding = null
     }
+
+
 }

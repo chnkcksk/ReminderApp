@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.chnkcksk.reminderapp.model.DrawerMenuItem
 import com.chnkcksk.reminderapp.model.Reminder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -25,6 +26,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _reminderList = MutableLiveData<ArrayList<Reminder>>()
     val reminderList: LiveData<ArrayList<Reminder>> get() = _reminderList
+
+    private val _workspaceList = MutableLiveData<ArrayList<DrawerMenuItem>>()
+    val workspaceList: LiveData<ArrayList<DrawerMenuItem>> get() = _workspaceList
 
 
     fun loadRemindersList() {
@@ -74,6 +78,79 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
         }
 
+    }
+
+    // HomeViewModel.kt - loadWorkspaces() fonksiyonuna debug ekleyin
+
+    fun loadWorkspaces() {
+        val currentUser = auth.currentUser
+        android.util.Log.d("HomeViewModel", "loadWorkspaces called")
+
+        if (currentUser != null) {
+            val userId = currentUser.uid
+
+            _isLoading.value = true
+
+            android.util.Log.d("HomeViewModel", "User ID: $userId")
+
+            firestore.collection("workspaces")
+                .whereArrayContains("members", userId)
+                .get()
+                .addOnSuccessListener { documents ->
+
+                    _isLoading.value = false
+
+                    android.util.Log.d(
+                        "HomeViewModel",
+                        "Firebase query successful, document count: ${documents.size()}"
+                    )
+
+                    if (!documents.isEmpty) {
+                        val workspaceList = ArrayList<DrawerMenuItem>()
+                        documents.forEach { document ->
+                            android.util.Log.d("HomeViewModel", "Document ID: ${document.id}")
+                            android.util.Log.d(
+                                "HomeViewModel",
+                                "Workspace Name: ${document.getString("workspaceName")}"
+                            )
+                            android.util.Log.d(
+                                "HomeViewModel",
+                                "Workspace Type: ${document.getString("workspaceType")}"
+                            )
+
+                            val workspace = DrawerMenuItem(
+                                id = document.id,
+                                joinCode = document.getString("joinCode") ?: "",
+                                title = document.getString("workspaceName") ?: "",
+                                workspaceType = document.getString("workspaceType") ?: ""
+                            )
+                            workspaceList.add(workspace)
+                        }
+                        android.util.Log.d(
+                            "HomeViewModel",
+                            "Final workspace list size: ${workspaceList.size}"
+                        )
+                        _workspaceList.value = workspaceList
+                    } else {
+                        android.util.Log.d("HomeViewModel", "No workspaces found")
+                        _workspaceList.value = ArrayList()
+                    }
+                }
+                .addOnFailureListener { exception ->
+
+                    _isLoading.value = false
+
+                    android.util.Log.e(
+                        "HomeViewModel",
+                        "Error loading workspaces: ${exception.localizedMessage}"
+                    )
+                    _toastMessage.value =
+                        "Workspace'leri alırken hata oluştu: ${exception.localizedMessage}"
+                    _workspaceList.value = ArrayList()
+                }
+        } else {
+            android.util.Log.e("HomeViewModel", "Current user is null")
+        }
     }
 
 

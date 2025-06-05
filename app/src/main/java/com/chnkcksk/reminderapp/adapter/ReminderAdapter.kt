@@ -23,8 +23,11 @@ import com.google.firebase.ktx.Firebase
 class ReminderAdapter(
     private val context: Context,
     private val workspaceId: String,
+    private val isReadOnly: String,
+    private val owner:Boolean,
     private val homeReminderList: ArrayList<Reminder>,
-    private val onItemClick: (workspaceId: String, reminderId: String) -> Unit
+    private val onItemClick: (Reminder) -> Unit
+
 
 ) :
     RecyclerView.Adapter<ReminderAdapter.ReminderViewHolder>() {
@@ -59,37 +62,23 @@ class ReminderAdapter(
 
         if (priority == "High") {
             holder.binding.priorityTV.text = "H"
-            holder.binding.priorityTV.setTextColor(ContextCompat.getColor(context,R.color.red))
+            holder.binding.priorityTV.setTextColor(ContextCompat.getColor(context, R.color.red))
         } else if (priority == "Medium") {
             holder.binding.priorityTV.text = "M"
-            holder.binding.priorityTV.setTextColor(ContextCompat.getColor(context,R.color.orange))
+            holder.binding.priorityTV.setTextColor(ContextCompat.getColor(context, R.color.orange))
         } else if (priority == "Low") {
             holder.binding.priorityTV.text = "L"
-            holder.binding.priorityTV.setTextColor(ContextCompat.getColor(context,R.color.green))
+            holder.binding.priorityTV.setTextColor(ContextCompat.getColor(context, R.color.green))
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
         holder.itemView.setOnClickListener {
             val position = holder.adapterPosition
             if (position != RecyclerView.NO_POSITION) {
-                val reminderId = homeReminderList[position].id
-                onItemClick("personalWorkspace", reminderId)
+                onItemClick(homeReminderList[position]) // Reminder nesnesini gönder
             }
         }
+
 
         val isCompleted = homeReminderList[position].isCompleted == true
 
@@ -100,6 +89,8 @@ class ReminderAdapter(
                 holder.binding.reminderDateTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
             holder.binding.reminderTimeTV.paintFlags =
                 holder.binding.reminderTimeTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            holder.binding.priorityTV.paintFlags =
+                holder.binding.priorityTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
         } else {
             holder.binding.reminderTitleTV.paintFlags =
                 holder.binding.reminderTitleTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
@@ -107,6 +98,8 @@ class ReminderAdapter(
                 holder.binding.reminderDateTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
             holder.binding.reminderTimeTV.paintFlags =
                 holder.binding.reminderTimeTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            holder.binding.priorityTV.paintFlags =
+                holder.binding.priorityTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
         }
 
         // Listener eklemeden önce temizle
@@ -116,57 +109,89 @@ class ReminderAdapter(
         holder.binding.switchButton.isChecked = homeReminderList[position].isCompleted == true
         updateSwitchColor(holder, homeReminderList[position].isCompleted == true)
 
-        // Listener yeniden tanımla
-        holder.binding.switchButton.setOnCheckedChangeListener { _, isChecked ->
-            updateSwitchColor(holder, isChecked)
+        if (isReadOnly == "Read only" && owner==false) {
+            holder.binding.switchButton.isEnabled = false
+            updateSwitchColor(holder, homeReminderList[position].isCompleted == true)
+        }else{
+            holder.binding.switchButton.setOnCheckedChangeListener { _, isChecked ->
+                updateSwitchColor(holder, isChecked)
 
-            // Firebase'e kaydet
-            val reminderId = homeReminderList[position].id // her öğenin benzersiz bir ID'si olmalı
+                // Firebase'e kaydet
+                val reminderId = homeReminderList[position].id // her öğenin benzersiz bir ID'si olmalı
 
-            val currentUser = auth.currentUser
+                val currentUser = auth.currentUser
 
-            loadingManager.showLoading(context)
+                loadingManager.showLoading(context)
 
-            if (currentUser != null) {
-                val userId = currentUser.uid
-                firestore.collection("Users")
-                    .document(userId)
-                    .collection("workspaces")
-                    .document("personalWorkspace")
-                    .collection("reminders")
-                    .document(reminderId)
-                    .update("isCompleted", isChecked)
-                    .addOnSuccessListener {
-                        loadingManager.dismissLoading()
-                        Toast.makeText(
-                            holder.itemView.context,
-                            "Status updated: $isCompleted",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }.addOnFailureListener {
-                        loadingManager.dismissLoading()
-                        Toast.makeText(holder.itemView.context, "Hata oluştu", Toast.LENGTH_SHORT)
-                            .show()
-                    }
+                if (currentUser == null) {
+                    return@setOnCheckedChangeListener
+                }
+                if (workspaceId == "personalWorkspace") {
+                    val userId = currentUser.uid
+                    firestore.collection("Users")
+                        .document(userId)
+                        .collection("workspaces")
+                        .document(workspaceId)
+                        .collection("reminders")
+                        .document(reminderId)
+                        .update("isCompleted", isChecked)
+                        .addOnSuccessListener {
+                            loadingManager.dismissLoading()
+                            Toast.makeText(
+                                holder.itemView.context,
+                                "Status updated: $isCompleted",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }.addOnFailureListener {
+                            loadingManager.dismissLoading()
+                            Toast.makeText(holder.itemView.context, "Hata oluştu", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                } else {
+                    firestore.collection("workspaces")
+                        .document(workspaceId)
+                        .collection("reminders")
+                        .document(reminderId)
+                        .update("isCompleted", isChecked)
+                        .addOnSuccessListener {
+                            loadingManager.dismissLoading()
+                            Toast.makeText(
+                                holder.itemView.context,
+                                "Status updated: $isCompleted",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }.addOnFailureListener {
+                            loadingManager.dismissLoading()
+                            Toast.makeText(holder.itemView.context, "Hata oluştu", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                }
+
+                if (isChecked) {
+                    holder.binding.reminderTitleTV.paintFlags =
+                        holder.binding.reminderTitleTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                    holder.binding.reminderDateTV.paintFlags =
+                        holder.binding.reminderDateTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                    holder.binding.reminderTimeTV.paintFlags =
+                        holder.binding.reminderTimeTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                    holder.binding.priorityTV.paintFlags =
+                        holder.binding.priorityTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                } else {
+                    holder.binding.reminderTitleTV.paintFlags =
+                        holder.binding.reminderTitleTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                    holder.binding.reminderDateTV.paintFlags =
+                        holder.binding.reminderDateTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                    holder.binding.reminderTimeTV.paintFlags =
+                        holder.binding.reminderTimeTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                    holder.binding.priorityTV.paintFlags =
+                        holder.binding.priorityTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                }
+
             }
-
-            if (isChecked) {
-                holder.binding.reminderTitleTV.paintFlags =
-                    holder.binding.reminderTitleTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-                holder.binding.reminderDateTV.paintFlags =
-                    holder.binding.reminderDateTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-                holder.binding.reminderTimeTV.paintFlags =
-                    holder.binding.reminderTimeTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-            } else {
-                holder.binding.reminderTitleTV.paintFlags =
-                    holder.binding.reminderTitleTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
-                holder.binding.reminderDateTV.paintFlags =
-                    holder.binding.reminderDateTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
-                holder.binding.reminderTimeTV.paintFlags =
-                    holder.binding.reminderTimeTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
-            }
-
         }
+
+        // Listener yeniden tanımla
+
     }
 
     private fun updateSwitchColor(holder: ReminderAdapter.ReminderViewHolder, isChecked: Boolean) {

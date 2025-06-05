@@ -124,6 +124,17 @@ class LoginFragment : Fragment() {
             Navigation.findNavController(requireView()).navigate(action)
         }
 
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+
+
+                override fun handleOnBackPressed() {
+                    val action = LoginFragmentDirections.actionLoginFragmentToWelcomeFragment()
+                    Navigation.findNavController(requireView()).navigate(action)
+
+                }
+            })
 
 
         binding.continueGoogleButton.setOnClickListener {

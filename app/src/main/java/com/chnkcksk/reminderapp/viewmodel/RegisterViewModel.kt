@@ -75,6 +75,8 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                                     "User saved but info failed: ${e.localizedMessage}"
                             }
 
+
+
                     }
 
                 }

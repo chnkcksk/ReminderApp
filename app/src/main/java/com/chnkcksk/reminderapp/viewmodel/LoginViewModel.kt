@@ -100,6 +100,9 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                                             _isLoading.value = false
                                             _toastMessage.value = "Failed to save user info: ${e.localizedMessage}"
                                         }
+
+
+
                                 } else {
                                     // Mevcut kullanıcı
                                     _isLoading.value = false

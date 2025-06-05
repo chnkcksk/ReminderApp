@@ -9,7 +9,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
-class AddReminderViewModel(application: Application) : AndroidViewModel(application) {
+class AddReminderOtherViewModel(application: Application) : AndroidViewModel(application) {
     private val auth: FirebaseAuth = Firebase.auth
     private val firestore = Firebase.firestore
 
@@ -19,30 +19,33 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
     private val _toastMessage = MutableLiveData<String>()
     val toastMessage: LiveData<String> get() = _toastMessage
 
-    private val _navigateHome = MutableLiveData<Boolean>()
-    val navigateHome: LiveData<Boolean> get() = _navigateHome
+    private val _navigateWorkspace = MutableLiveData<Boolean>()
+    val navigateWorkspace: LiveData<Boolean> get() = _navigateWorkspace
 
     private val _workspaceName = MutableLiveData<String>()
     val workspaceName: LiveData<String> get() = _workspaceName
 
+    private val _workspaceType = MutableLiveData<String>()
+    val workspaceType: LiveData<String> get() = _workspaceType
 
-
-    fun addReminder(
+    fun addOtherReminder(
+        workspaceId:String,
         title: String,
         description: String,
         priority: String,
         date: String,
         time: String
-    ) {
-
-        _isLoading.value = true
+    ){
 
         val currentUser = auth.currentUser
 
-        if (currentUser == null) {
-            _toastMessage.value = "User login required"
+        if (currentUser==null){
+            _toastMessage.value = "Error"
             return
         }
+
+        _isLoading.value = true
+
         val reminder = hashMapOf(
             "title" to title,
             "description" to description,
@@ -53,23 +56,58 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
             "time" to time
         )
 
-        firestore.collection("Users")
-            .document(currentUser.uid)
-            .collection("workspaces")
-            .document("personalWorkspace")
+        firestore.collection("workspaces")
+            .document(workspaceId)
             .collection("reminders")
             .add(reminder)
             .addOnSuccessListener {
                 _isLoading.value = false
-                _navigateHome.value = true
-                _toastMessage.value = "Reminder saved"
+                _toastMessage.value = "Reminder added successfully"
+                _navigateWorkspace.value = true
             }
             .addOnFailureListener {
                 _isLoading.value = false
-                _toastMessage.value = "Reminder could not be saved!"
+                _toastMessage.value = "Reminder could not be added"
             }
 
 
     }
+
+    fun getDatas(workspaceId: String){
+
+        _isLoading.value = true
+
+        firestore.collection("workspaces")
+            .document(workspaceId)
+            .get()
+            .addOnSuccessListener { doc ->
+                _workspaceName.value = doc.getString("workspaceName") ?: ""
+                _workspaceType.value = doc.getString("workspaceType") ?: ""
+                _isLoading.value = false
+
+            }.addOnFailureListener {
+                _isLoading.value = false
+
+            }
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }

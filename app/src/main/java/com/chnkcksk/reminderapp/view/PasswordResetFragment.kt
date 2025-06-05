@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentPasswordResetBinding
@@ -58,6 +59,19 @@ class PasswordResetFragment : Fragment() {
         binding.sendResetLinkButton.setOnClickListener {
             sendResetLink()
         }
+
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+
+
+                override fun handleOnBackPressed() {
+                    val action =
+                        PasswordResetFragmentDirections.actionPasswordResetFragmentToLoginFragment()
+                    Navigation.findNavController(requireView()).navigate(action)
+
+                }
+            })
     }
 
     @SuppressLint("NewApi")
