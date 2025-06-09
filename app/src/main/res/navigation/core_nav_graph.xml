@@ -38,6 +38,9 @@
             app:popEnterAnim="@animator/nav_default_pop_enter_anim"
             app:popExitAnim="@animator/nav_default_pop_exit_anim"
             app:destination="@id/otherWorkspaceFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_passwordChangeFragment"
+            app:destination="@id/passwordChangeFragment" />
     </fragment>
     <fragment
         android:id="@+id/addReminderFragment"
@@ -184,6 +187,15 @@
             app:exitAnim="@animator/nav_default_exit_anim"
             app:popEnterAnim="@animator/nav_default_pop_enter_anim"
             app:popExitAnim="@animator/nav_default_pop_exit_anim"
+            app:destination="@id/homeFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/passwordChangeFragment"
+        android:name="com.chnkcksk.reminderapp.view.PasswordChangeFragment"
+        android:label="fragment_password_change"
+        tools:layout="@layout/fragment_password_change" >
+        <action
+            android:id="@+id/action_passwordChangeFragment_to_homeFragment"
             app:destination="@id/homeFragment" />
     </fragment>
 </navigation>

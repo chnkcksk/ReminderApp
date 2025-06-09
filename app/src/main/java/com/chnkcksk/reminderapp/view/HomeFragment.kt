@@ -189,7 +189,8 @@ class HomeFragment : Fragment() {
             // TODO: Implement app preferences
         }
         contentBinding.passwordChangeButton.setOnClickListener {
-            // TODO: Implement password change
+            val action = HomeFragmentDirections.actionHomeFragmentToPasswordChangeFragment()
+            Navigation.findNavController(requireView()).navigate(action)
         }
 
         // Workspace adapter'ını boş DrawerMenuItem listesi ile başlat
