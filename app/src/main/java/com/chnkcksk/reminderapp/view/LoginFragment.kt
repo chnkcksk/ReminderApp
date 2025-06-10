@@ -146,6 +146,11 @@ class LoginFragment : Fragment() {
         }
     }
 
+    private fun goBack(){
+        val action = LoginFragmentDirections.actionLoginFragmentToWelcomeFragment()
+        Navigation.findNavController(requireView()).navigate(action)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         _binding = null

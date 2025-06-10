@@ -93,6 +93,38 @@
                 android:layout_marginLeft="16dp"
                 android:layout_weight="1"
                 android:fontFamily="@font/public_sans"
+                android:text="Reminder"
+                android:textSize="16sp" />
+
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/reminderCheckBox"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="@font/public_sans_bold"
+                android:buttonTint="@color/secondary_color"
+                android:textColor="@color/primary_text_color"
+                app:buttonTint="@color/secondary_color" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linearLayout33"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="16dp"
+                android:layout_weight="1"
+                android:fontFamily="@font/public_sans"
                 android:text="Date"
                 android:textSize="16sp" />
 
@@ -118,7 +150,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/linearLayout">
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout33">
 
             <TextView
                 android:layout_width="wrap_content"

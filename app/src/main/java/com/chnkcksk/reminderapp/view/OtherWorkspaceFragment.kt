@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
@@ -41,6 +42,9 @@ class OtherWorkspaceFragment : Fragment() {
     private var isWorkspaceNameLoaded = false
     private var isEditableTypeLoaded = false
     private var isOwnerIdLoaded = false
+
+    private var lastRefreshTime = 0L
+    private val REFRESH_COOLDOWN = 5000L // 5 saniye
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -140,6 +144,16 @@ class OtherWorkspaceFragment : Fragment() {
             goBack()
         }
 
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastRefreshTime > REFRESH_COOLDOWN) {
+                viewModel.loadWorkspaceData(workspaceId)
+                Toast.makeText(requireContext(),"Workspace data refreshed",Toast.LENGTH_SHORT).show()
+                lastRefreshTime = currentTime
+            }
+            binding.swipeRefreshLayout.isRefreshing = false
+        }
+
         binding.editWorkspaceButton.setOnClickListener {
             val action =
                 OtherWorkspaceFragmentDirections.actionOtherWorkspaceFragmentToEditWorkspaceFragment(
@@ -155,6 +169,17 @@ class OtherWorkspaceFragment : Fragment() {
                 )
             Navigation.findNavController(requireView()).navigate(action)
         }
+
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+
+
+                override fun handleOnBackPressed() {
+                    goBack()
+
+                }
+            })
 
 
     }

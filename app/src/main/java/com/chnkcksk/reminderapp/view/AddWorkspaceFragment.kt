@@ -16,6 +16,7 @@ import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
@@ -127,7 +128,7 @@ class AddWorkspaceFragment : Fragment() {
             val workspaceSelectedType = binding.workspaceTypeSpinner.selectedItem
 
             if (buildDialog == true && workspaceSelectedType=="Group") {
-                val dialogBuilder = AlertDialog.Builder(requireContext())
+                val dialogBuilder = AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
                 dialogBuilder.setTitle("Join Code")
 
                 // joinCode'u büyük ve ortalanmış gösteren TextView
@@ -140,12 +141,22 @@ class AddWorkspaceFragment : Fragment() {
 
                 dialogBuilder.setView(messageView)
                 dialogBuilder.setPositiveButton("Okay") { _, _ ->
-                    val action = AddWorkspaceFragmentDirections
                 }
                 dialogBuilder.setNegativeButton("Copy", null)
                 dialogBuilder.setNeutralButton("Share", null)
 
                 val alertDialog = dialogBuilder.create()
+                alertDialog.apply {
+                    setOnShowListener {
+                        // Butonların metin rengini değiştir
+                        getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
+                            ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                        getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+                            ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                        getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL)?.setTextColor(
+                            ContextCompat.getColor(requireContext(), R.color.primary_color))
+                    }
+                }
                 alertDialog.show()
 
                 // Butonlar burada oluşturulduktan sonra dialog kapanmasın diye listener'ları ayrı set ediyoruz:

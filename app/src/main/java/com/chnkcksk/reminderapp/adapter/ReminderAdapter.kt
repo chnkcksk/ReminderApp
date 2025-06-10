@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.chnkcksk.reminderapp.R
@@ -69,7 +70,17 @@ class ReminderAdapter(
         } else if (priority == "Low") {
             holder.binding.priorityTV.text = "L"
             holder.binding.priorityTV.setTextColor(ContextCompat.getColor(context, R.color.green))
+        }else{
+            holder.binding.priorityTV.isVisible = false
         }
+
+        val reminder = homeReminderList[position].reminder
+
+        if (reminder == true){
+            holder.binding.reminderIV.setImageResource(R.drawable.baseline_notifications_none_24)
+        }
+
+
 
 
         holder.itemView.setOnClickListener {

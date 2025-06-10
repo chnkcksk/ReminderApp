@@ -11,6 +11,7 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
@@ -222,11 +223,31 @@ class EditReminderOtherFragment : Fragment() {
 
     }
 
+    private fun cancelEditAndGoBack(){
+        AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
+            .setTitle("Are you sure?")
+            .setMessage("Are you sure you want to cancel the edit and leave?")
+            .setPositiveButton("Yes"){_,_ ->
+                goBack()
+            }
+            .setNegativeButton("No",null)
+            .setCancelable(false)
+            .create()
+            .apply {
+                setOnShowListener {
+                    // Butonların metin rengini değiştir
+                    getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                    getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                }
+            }
+            .show()
+    }
+
     private fun setupButtons() {
 
         binding.apply {
             backButton.setOnClickListener {
-                goBack()
+                cancelEditAndGoBack()
             }
 
             editReminderOButton.setOnClickListener {
@@ -253,19 +274,28 @@ class EditReminderOtherFragment : Fragment() {
 
 
                     override fun handleOnBackPressed() {
-                        goBack()
+                        cancelEditAndGoBack()
 
                     }
                 })
 
             deleteReminderOButton.setOnClickListener {
 
-                AlertDialog.Builder(requireContext())
+                AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
                     .setTitle("Are You Sure?")
                     .setMessage("Are you sure you want to delete the reminder?")
                     .setPositiveButton("Yes") { _, _ ->
                         viewModel.deleteReminder(workspaceId, reminderId)
                     }.setNegativeButton("No", null)
+                    .setCancelable(false)
+                    .create()
+                    .apply {
+                        setOnShowListener {
+                            // Butonların metin rengini değiştir
+                            getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                            getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                        }
+                    }
                     .show()
 
 

@@ -1,5 +1,6 @@
 package com.chnkcksk.reminderapp.view
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -19,6 +20,8 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
@@ -33,6 +36,7 @@ import com.chnkcksk.reminderapp.databinding.NavDrawerContentBinding
 import com.chnkcksk.reminderapp.databinding.NavDrawerHeaderBinding
 import com.chnkcksk.reminderapp.model.DrawerMenuItem
 import com.chnkcksk.reminderapp.model.Reminder
+import com.chnkcksk.reminderapp.permissions.NotificationPermissionManager
 import com.chnkcksk.reminderapp.util.LoadingManager
 import com.chnkcksk.reminderapp.viewmodel.HomeViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -60,11 +64,18 @@ class HomeFragment : Fragment() {
     private val loadingManager = LoadingManager.getInstance()
     private val viewModel: HomeViewModel by viewModels()
 
+
+    // Bildirim izni için NotificationPermissionManager
+    private lateinit var permissionManager: NotificationPermissionManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         auth = Firebase.auth
 
         userName = auth.currentUser?.displayName.toString()
+
+        permissionManager = NotificationPermissionManager.getInstance()
+            .registerPermissionLauncher(this)
     }
 
     override fun onCreateView(
@@ -79,13 +90,54 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
 
+        viewModel.getUserProviderData()
 
+        requestNotificationPermission()
         setupReminders()
         setupLiveDatas()
         setupToolbar()
         setupDrawerMenu()
         setupButtons()
         checkSession()
+
+    }
+
+
+    private fun requestNotificationPermission() {
+        context?.let { ctx ->
+            permissionManager.checkNotificationPermission(
+                ctx,
+                object : NotificationPermissionManager.NotificationPermissionCallback {
+                    override fun onPermissionGranted(notificationContent: NotificationPermissionManager.NotificationContent) {
+//                        Toast.makeText(context, "Notifications opened successfully", Toast.LENGTH_SHORT).show()
+                    }
+
+                    override fun onPermissionDenied() {
+                        // İzin verilmedi
+                    }
+
+                    override fun onNotificationsDisabled() {
+                        // Bildirimler kapalı
+                    }
+
+                    override fun onSettingsOpened() {
+                        // Ayarlar açıldı
+                    }
+                },
+                /*
+                // Özelleştirilmiş bildirim içeriği
+                NotificationPermissionManager.NotificationContent(
+                    title = "Reminder Notification",
+                    message = "Example of notification from your reminder app",
+                    channelId = "reminder_channel",
+                    channelName = "Reminder Notifications",
+                    channelDescription = "Reminder app notifications",
+                    delaySeconds = 3
+                )
+
+                 */
+            )
+        }
     }
 
     private fun setupReminders() {
@@ -97,13 +149,16 @@ class HomeFragment : Fragment() {
             "Editable",
             true,
             ArrayList()
-        ){ reminder ->
+        ) { reminder ->
 
             // Fragment burada kontrolü eline alıyor
             val workspaceId = "personalWorkspace" // Eğer bu sabitse
             val reminderId = reminder.id
 
-            val action = HomeFragmentDirections.actionHomeFragmentToEditReminderFragment(workspaceId,reminderId)
+            val action = HomeFragmentDirections.actionHomeFragmentToEditReminderFragment(
+                workspaceId,
+                reminderId
+            )
             Navigation.findNavController(requireView()).navigate(action)
 
         }
@@ -128,6 +183,8 @@ class HomeFragment : Fragment() {
                 loadingManager.dismissLoading()
             }
         }
+
+
     }
 
     private fun setupToolbar() {
@@ -182,12 +239,18 @@ class HomeFragment : Fragment() {
             val action = HomeFragmentDirections.actionHomeFragmentToAddWorkspaceFragment()
             Navigation.findNavController(requireView()).navigate(action)
         }
-        contentBinding.notificationSettingsButton.setOnClickListener {
-            // TODO: Implement notification settings
-        }
+
         contentBinding.appPreferencesButton.setOnClickListener {
-            // TODO: Implement app preferences
+            val action = HomeFragmentDirections.actionHomeFragmentToAppPreferencesFragment()
+            Navigation.findNavController(requireView()).navigate(action)
         }
+
+        viewModel.isGoogleUser.observe(viewLifecycleOwner) { isGoogleUser ->
+            if (isGoogleUser == true) {
+                contentBinding.passwordChangeButton.isVisible = false
+            }
+        }
+
         contentBinding.passwordChangeButton.setOnClickListener {
             val action = HomeFragmentDirections.actionHomeFragmentToPasswordChangeFragment()
             Navigation.findNavController(requireView()).navigate(action)
@@ -196,7 +259,11 @@ class HomeFragment : Fragment() {
         // Workspace adapter'ını boş DrawerMenuItem listesi ile başlat
         drawerMenuAdapter = DrawerMenuAdapter(ArrayList<DrawerMenuItem>()) { item ->
             // Workspace item'a tıklandığında yapılacak işlemler
-            Toast.makeText(requireContext(), "Selected workspace: ${item.title}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(),
+                "Selected workspace: ${item.title}",
+                Toast.LENGTH_SHORT
+            ).show()
 
             val action = HomeFragmentDirections.actionHomeFragmentToOtherWorkspaceFragment(item.id)
             Navigation.findNavController(requireView()).navigate(action)
@@ -215,12 +282,18 @@ class HomeFragment : Fragment() {
             // DEBUG: Veri gelip gelmediğini kontrol edin
             android.util.Log.d("HomeFragment", "Workspace list size: ${workspaceList?.size}")
             workspaceList?.forEach { workspace ->
-                android.util.Log.d("HomeFragment", "Workspace: ${workspace.title} - Type: ${workspace.workspaceType}")
+                android.util.Log.d(
+                    "HomeFragment",
+                    "Workspace: ${workspace.title} - Type: ${workspace.workspaceType}"
+                )
             }
 
             if (workspaceList != null && workspaceList.isNotEmpty()) {
                 drawerMenuAdapter.updateList(workspaceList)
-                android.util.Log.d("HomeFragment", "Adapter updated with ${workspaceList.size} items")
+                android.util.Log.d(
+                    "HomeFragment",
+                    "Adapter updated with ${workspaceList.size} items"
+                )
             } else {
                 android.util.Log.d("HomeFragment", "Workspace list is empty or null")
             }
@@ -228,7 +301,7 @@ class HomeFragment : Fragment() {
 
         // Logout button click listener
         contentBinding.btnLogout.setOnClickListener {
-            AlertDialog.Builder(requireContext())
+            AlertDialog.Builder(requireContext(),R.style.MyDialogTheme)
                 .setTitle("Are You Sure?")
                 .setMessage("Are you sure you want to log out?")
                 .setPositiveButton("Yes") { _, _ ->
@@ -238,7 +311,19 @@ class HomeFragment : Fragment() {
                 }
                 .setNegativeButton("No") { _, _ ->
                     // Do nothing
-                }.show()
+                }
+                .setCancelable(false)
+                .create()
+                .apply {
+                    setOnShowListener {
+                        // Butonların metin rengini değiştir
+                        getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
+                            ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                        getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+                            ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                    }
+                }
+                .show()
         }
     }
 
@@ -294,7 +379,12 @@ class HomeFragment : Fragment() {
             })
     }
 
-    fun createInitialsAvatar(initials: String, size: Int, backgroundColor: Int, textColor: Int): Bitmap {
+    fun createInitialsAvatar(
+        initials: String,
+        size: Int,
+        backgroundColor: Int,
+        textColor: Int
+    ): Bitmap {
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 

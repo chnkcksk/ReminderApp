@@ -14,6 +14,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
@@ -70,6 +71,9 @@ class EditWorkspaceFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.editWorkspaceButton.isVisible= false
+        binding.linearLayout11.isVisible = false
+
 
 
         viewModel.fetchWorkspaceMemberNames(workspaceId!!)
@@ -100,10 +104,10 @@ class EditWorkspaceFragment : Fragment() {
                         if (editablePosition != -1) {
                             binding.editWorkspaceEditableSpinner.setSelection(editablePosition)
                         }
-                        binding.linearLayout11.isVisible = false
+                        //binding.linearLayout11.isVisible = false
                         binding.editWorkspaceEditableSpinner.isEnabled = false
                     } else {
-                        binding.linearLayout11.isVisible = true
+                        //binding.linearLayout11.isVisible = true
                         // Diğer durumlarda yeniden etkinleştir
                         binding.editWorkspaceEditableSpinner.isEnabled = true
                     }
@@ -116,25 +120,28 @@ class EditWorkspaceFragment : Fragment() {
 
     }
 
-
     private fun setupToOwner(){
         binding.deleteWorkspaceButton.setImageResource(R.drawable.baseline_delete_outline_24)
         binding.deleteWorkspaceButton.setOnClickListener {
             deleteDialog()
         }
+        binding.editWorkspaceButton.isVisible = true
     }
 
     private fun setupToGuest(){
+
+        binding.editWorkspaceButton.isVisible = false
+
         binding.workspaceNameEditET.isClickable = false
         binding.workspaceNameEditET.isFocusable = false
-        binding.editWorkspaceButton.isVisible = false
+
 
         binding.editWorkspaceEditableSpinner.isEnabled = false
         binding.editWorkspaceTypeSpinner.isEnabled = false
 
         binding.deleteWorkspaceButton.setImageResource(R.drawable.baseline_exit_to_app_24)
         binding.deleteWorkspaceButton.setOnClickListener {
-            AlertDialog.Builder(requireContext())
+            AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
                 .setTitle("Leave")
                 .setMessage("Are you sure you want to leave the workspace?")
                 .setPositiveButton("Yes") { _, _ ->
@@ -144,6 +151,17 @@ class EditWorkspaceFragment : Fragment() {
                     Navigation.findNavController(requireView()).navigate(action)
                 }
                 .setNegativeButton("No", null)
+                .setCancelable(false)
+                .create()
+                .apply {
+                    setOnShowListener {
+                        // Butonların metin rengini değiştir
+                        getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
+                            ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                        getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+                            ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                    }
+                }
                 .show()
 
         }
@@ -155,7 +173,7 @@ class EditWorkspaceFragment : Fragment() {
         }
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
             if (isLoading == true) {
-                loadingManager.showLoading(requireContext())
+                loadingManager.showLoadingQuick(requireContext())
             } else {
                 loadingManager.dismissLoading()
             }
@@ -172,6 +190,8 @@ class EditWorkspaceFragment : Fragment() {
             if (it == "Personal") {
                 binding.linearLayout11.isVisible = false
                 isPersonal = true
+            }else{
+                binding.linearLayout11.isVisible = true
             }
             val selectedIndex = when (it) {
                 "Group" -> 0
@@ -243,9 +263,31 @@ class EditWorkspaceFragment : Fragment() {
 
     }
 
+    private fun cancelEditAndGoBack(){
+        androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
+            .setTitle("Are you sure?")
+            .setMessage("Are you sure you want to cancel the edit and leave?")
+            .setPositiveButton("Yes"){_,_ ->
+                goBack()
+            }
+            .setNegativeButton("No",null)
+            .setCancelable(false)
+            .create()
+            .apply {
+                setOnShowListener {
+                    // Butonların metin rengini değiştir
+                    getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
+                        ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                    getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+                        ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                }
+            }
+            .show()
+    }
+
     private fun setupButtons() {
         binding.backButton.setOnClickListener {
-            goBack()
+            cancelEditAndGoBack()
         }
 
 
@@ -280,7 +322,7 @@ class EditWorkspaceFragment : Fragment() {
 
 
                 override fun handleOnBackPressed() {
-                    goBack()
+                    cancelEditAndGoBack()
 
                 }
             })
@@ -291,7 +333,7 @@ class EditWorkspaceFragment : Fragment() {
             val eT = binding.editWorkspaceEditableSpinner.selectedItem.toString()
 
             if (isPersonal == false && wT == "Personal") {
-                AlertDialog.Builder(requireContext())
+                AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
                     .setTitle("Are You Sure")
                     .setMessage("")
                     .setPositiveButton("Yes") { _, _ ->
@@ -304,6 +346,17 @@ class EditWorkspaceFragment : Fragment() {
                             kickOthers
                         )
                     }.setNegativeButton("No", null)
+                    .setCancelable(false)
+                    .create()
+                    .apply {
+                        setOnShowListener {
+                            // Butonların metin rengini değiştir
+                            getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
+                                ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                            getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+                                ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                        }
+                    }
                     .show()
 
             } else {
@@ -315,7 +368,7 @@ class EditWorkspaceFragment : Fragment() {
     }
 
     private fun deleteDialog() {
-        AlertDialog.Builder(requireContext())
+        AlertDialog.Builder(requireContext(),R.style.MyDialogTheme)
             .setTitle("Delete")
             .setMessage("Are you sure you want to delete the workspace?")
             .setPositiveButton("Yes") { _, _ ->
@@ -325,6 +378,17 @@ class EditWorkspaceFragment : Fragment() {
                 Navigation.findNavController(requireView()).navigate(action)
             }
             .setNegativeButton("No", null)
+            .setCancelable(false)
+            .create()
+            .apply {
+                setOnShowListener {
+                    // Butonların metin rengini değiştir
+                    getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
+                        ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                    getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+                        ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                }
+            }
             .show()
     }
 

@@ -8,5 +8,6 @@ data class Reminder(
     val timestamp: String = "",
     val priority: String = "",
     val date: String = "",
-    val time: String = ""
+    val time: String = "",
+    val reminder:Boolean = false
 )

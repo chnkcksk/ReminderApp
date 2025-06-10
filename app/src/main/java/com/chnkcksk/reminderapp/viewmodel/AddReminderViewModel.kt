@@ -25,6 +25,10 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
     private val _workspaceName = MutableLiveData<String>()
     val workspaceName: LiveData<String> get() = _workspaceName
 
+    private val _setNotification = MutableLiveData<Boolean>()
+    val setNotification: LiveData<Boolean> get() = _setNotification
+
+
 
 
     fun addReminder(
@@ -32,7 +36,9 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
         description: String,
         priority: String,
         date: String,
-        time: String
+        time: String,
+        isNotificationChecked:Boolean
+
     ) {
 
         _isLoading.value = true
@@ -50,7 +56,8 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
             "isCompleted" to false,
             "priority" to priority,
             "date" to date,
-            "time" to time
+            "time" to time,
+            "reminder" to isNotificationChecked
         )
 
         firestore.collection("Users")
@@ -60,6 +67,11 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
             .collection("reminders")
             .add(reminder)
             .addOnSuccessListener {
+
+                if (isNotificationChecked){
+                    _setNotification.value = true
+                }
+
                 _isLoading.value = false
                 _navigateHome.value = true
                 _toastMessage.value = "Reminder saved"

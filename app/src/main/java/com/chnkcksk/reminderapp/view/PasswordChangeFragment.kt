@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
@@ -57,24 +58,34 @@ class PasswordChangeFragment : Fragment() {
         setupButtons()
     }
 
-    private fun setupLiveDatas(){
+    private fun setupLiveDatas() {
 
-        viewModel.toastMessage.observe(viewLifecycleOwner){ message ->
-            Toast.makeText(requireContext(), message,Toast.LENGTH_LONG).show()
+        viewModel.toastMessage.observe(viewLifecycleOwner) { message ->
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
         }
 
-        viewModel.isLoading.observe(viewLifecycleOwner){ isLoading ->
-            if (isLoading){
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            if (isLoading) {
                 loadingManager.showLoading(requireContext())
-            }else{
+            } else {
                 loadingManager.dismissLoading()
             }
         }
-        viewModel.navigateHome.observe(viewLifecycleOwner){ isNavigate ->
-            if (isNavigate){
+        viewModel.navigateHome.observe(viewLifecycleOwner) { isNavigate ->
+            if (isNavigate) {
                 goBack()
             }
 
+        }
+
+        viewModel.clearFields.observe(viewLifecycleOwner) { clearFields ->
+            if (clearFields == true) {
+                binding.apply {
+                    oldPasswET.text.clear()
+                    newPasswET.text.clear()
+                    newPasswAgainET.text.clear()
+                }
+            }
         }
 
     }
@@ -87,31 +98,42 @@ class PasswordChangeFragment : Fragment() {
             }
 
             oldPasswordVisibilityToggle2.setOnClickListener {
-                viewModel.togglePasswordVisibility(oldPasswAgainET, oldPasswordVisibilityToggle2)
+                viewModel.togglePasswordVisibility(newPasswET, oldPasswordVisibilityToggle2)
             }
 
             oldPasswordVisibilityToggle3.setOnClickListener {
-                viewModel.togglePasswordVisibility(newPasswET, oldPasswordVisibilityToggle3)
+                viewModel.togglePasswordVisibility(newPasswAgainET, oldPasswordVisibilityToggle3)
             }
 
             changePasswButton.setOnClickListener {
 
                 val oldPassw = oldPasswET.text.toString()
-                val oldPasswAgain = oldPasswAgainET.text.toString()
                 val newPassw = newPasswET.text.toString()
+                val newPasswAgain = newPasswAgainET.text.toString()
 
-                viewModel.changePassword(oldPassw, oldPasswAgain, newPassw)
+                viewModel.reAuthenticateAndChangePassword(oldPassw, newPassw, newPasswAgain)
             }
 
             backButton.setOnClickListener {
                 goBack()
             }
+
+            requireActivity().onBackPressedDispatcher.addCallback(
+                viewLifecycleOwner,
+                object : OnBackPressedCallback(true) {
+
+
+                    override fun handleOnBackPressed() {
+                        goBack()
+
+                    }
+                })
         }
 
 
     }
 
-    private fun goBack(){
+    private fun goBack() {
         val action = PasswordChangeFragmentDirections.actionPasswordChangeFragmentToHomeFragment()
         Navigation.findNavController(requireView()).navigate(action)
     }

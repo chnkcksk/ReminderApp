@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.chnkcksk.reminderapp.model.DrawerMenuItem
 import com.chnkcksk.reminderapp.model.Reminder
+import com.chnkcksk.reminderapp.permissions.NotificationPermissionManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
@@ -17,6 +18,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val auth: FirebaseAuth = Firebase.auth
     private val firestore = Firebase.firestore
+    private val notificationPermissionManager = NotificationPermissionManager.getInstance()
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isloading: LiveData<Boolean> get() = _isLoading
@@ -30,6 +32,27 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _workspaceList = MutableLiveData<ArrayList<DrawerMenuItem>>()
     val workspaceList: LiveData<ArrayList<DrawerMenuItem>> get() = _workspaceList
 
+    private val _isGoogleUser = MutableLiveData<Boolean>()
+    val isGoogleUser: LiveData<Boolean> get() = _isGoogleUser
+
+
+
+    fun getUserProviderData(){
+
+        val currentUser = auth.currentUser
+
+        if (currentUser==null){
+            _toastMessage.value = "Current user is null"
+            return
+        }
+
+        currentUser.providerData.forEach { profile ->
+            if (profile.providerId == "google.com"){
+                _isGoogleUser.value = true
+            }
+        }
+
+    }
 
     fun loadRemindersList() {
         val currentUser = auth.currentUser
@@ -56,7 +79,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                             timestamp = document.get("timestamp").toString() ?: "",
                             priority = document.getString("priority") ?: "",
                             date = document.getString("date") ?: "",
-                            time = document.getString("time") ?: ""
+                            time = document.getString("time") ?: "",
+                            reminder = document.getBoolean("reminder") ?: false
                         )
                         reminderList.add(reminder)
                     }
