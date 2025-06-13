@@ -8,6 +8,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class AddReminderOtherViewModel(application: Application) : AndroidViewModel(application) {
     private val auth: FirebaseAuth = Firebase.auth
@@ -28,18 +33,17 @@ class AddReminderOtherViewModel(application: Application) : AndroidViewModel(app
     private val _workspaceType = MutableLiveData<String>()
     val workspaceType: LiveData<String> get() = _workspaceType
 
-    fun addOtherReminder(
-        workspaceId:String,
+    suspend fun addOtherReminder(
+        workspaceId: String,
         title: String,
         description: String,
         priority: String,
         date: String,
         time: String
-    ){
-
+    ) {
         val currentUser = auth.currentUser
 
-        if (currentUser==null){
+        if (currentUser == null) {
             _toastMessage.value = "Error"
             return
         }
@@ -56,21 +60,26 @@ class AddReminderOtherViewModel(application: Application) : AndroidViewModel(app
             "time" to time
         )
 
-        firestore.collection("workspaces")
-            .document(workspaceId)
-            .collection("reminders")
-            .add(reminder)
-            .addOnSuccessListener {
-                _isLoading.value = false
-                _toastMessage.value = "Reminder added successfully"
-                _navigateWorkspace.value = true
-            }
-            .addOnFailureListener {
-                _isLoading.value = false
-                _toastMessage.value = "Reminder could not be added"
-            }
+        try {
+            // Firestore işlemini coroutine ile yapıyoruz
+            firestore.collection("workspaces")
+                .document(workspaceId)
+                .collection("reminders")
+                .add(reminder)
+                .await() // Coroutine ile bekleme
 
+            // Başarılı durumda
+            _isLoading.value = false
+            delay(1200) // 0.5 saniye bekle
+            _toastMessage.value = "Reminder added successfully"
+            delay(500) // 0.5 saniye bekle
+            _navigateWorkspace.value = true
 
+        } catch (e: Exception) {
+            // Hata durumunda
+            _isLoading.value = false
+            _toastMessage.value = "Reminder could not be added"
+        }
     }
 
     fun getDatas(workspaceId: String){

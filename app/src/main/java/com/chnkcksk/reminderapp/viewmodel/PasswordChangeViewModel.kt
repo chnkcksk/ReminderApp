@@ -13,6 +13,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.tasks.await
 
 class PasswordChangeViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -31,7 +33,10 @@ class PasswordChangeViewModel(application: Application) : AndroidViewModel(appli
     private val _clearFields = MutableLiveData<Boolean>()
     val clearFields: LiveData<Boolean> get() = _clearFields
 
-    fun reAuthenticateAndChangePassword(oldPassw: String, newPassw: String, newPasswAgain: String) {
+    private val _viewSuccessAnim = MutableLiveData<Boolean>()
+    val viewSuccessAnim: LiveData<Boolean> get() = _viewSuccessAnim
+
+    suspend fun reAuthenticateAndChangePassword(oldPassw: String, newPassw: String, newPasswAgain: String) {
 
         val currentUser = auth.currentUser
 
@@ -45,8 +50,14 @@ class PasswordChangeViewModel(application: Application) : AndroidViewModel(appli
             return
         }
 
+
         if (!newPassw.equals(newPasswAgain)) {
             _toastMessage.value = "Passwords are not the same!"
+            return
+        }
+
+        if (newPassw.equals(oldPassw)){
+            _toastMessage.value = "The old password cannot be the same as the new password!"
             return
         }
 
@@ -61,27 +72,53 @@ class PasswordChangeViewModel(application: Application) : AndroidViewModel(appli
         _isLoading.value = true
 
 
-        val credential = EmailAuthProvider.getCredential(email, oldPassw)
+        try {
 
-        currentUser.reauthenticate(credential)
-            .addOnCompleteListener { authTask ->
-                if (authTask.isSuccessful){
-                    currentUser.updatePassword(newPassw)
-                        .addOnCompleteListener { updateTask ->
-                            if (updateTask.isSuccessful){
-                                _isLoading.value = false
-                                _toastMessage.value = "Password changed successfully"
-                                _clearFields.value = true
-                            }else{
-                                _isLoading.value = false
-                                _toastMessage.value = "Failed to change password: ${updateTask.exception?.message}"
-                            }
-                        }
-                }else{
-                    _isLoading.value = false
-                    _toastMessage.value = "Re-authentication failed: ${authTask.exception?.message}"
-                }
-            }
+            val credential = EmailAuthProvider.getCredential(email, oldPassw)
+
+            // Re-authenticate the user
+            currentUser.reauthenticate(credential).await()
+
+            // Update the password
+            currentUser.updatePassword(newPassw).await()
+
+            _isLoading.value = false
+            delay(1200)
+            _viewSuccessAnim.value = true
+            delay(2000)
+            _clearFields.value = true
+
+
+
+
+        }catch (e:Exception){
+            _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = e.localizedMessage ?: "An unexpected error occurred."
+        }
+
+
+
+//        currentUser.reauthenticate(credential)
+//            .addOnCompleteListener { authTask ->
+//                if (authTask.isSuccessful){
+//                    currentUser.updatePassword(newPassw)
+//                        .addOnCompleteListener { updateTask ->
+//                            if (updateTask.isSuccessful){
+//                                _isLoading.value = false
+//                                _toastMessage.value = "Password changed successfully"
+//                                _viewSuccessAnim.value = true
+//                                _clearFields.value = true
+//                            }else{
+//                                _isLoading.value = false
+//                                _toastMessage.value = "Failed to change password: ${updateTask.exception?.message}"
+//                            }
+//                        }
+//                }else{
+//                    _isLoading.value = false
+//                    _toastMessage.value = "Re-authentication failed: ${authTask.exception?.message}"
+//                }
+//            }
 
 
     }

@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.findNavController
 import com.chnkcksk.reminderapp.MainNavGraphDirections
@@ -27,6 +28,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
 
 
 class LoginFragment : Fragment() {
@@ -111,7 +113,11 @@ class LoginFragment : Fragment() {
             val email = binding.loginEmailET.text.toString()
             val password = binding.loginPasswordET.text.toString()
 
-            viewModel.login(email, password)
+            lifecycleScope.launch {
+                viewModel.login(email, password)
+            }
+
+
         }
 
         binding.backButton.setOnClickListener {

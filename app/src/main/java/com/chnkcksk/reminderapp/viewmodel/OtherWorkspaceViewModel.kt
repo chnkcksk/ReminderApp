@@ -15,6 +15,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.tasks.await
 
 class OtherWorkspaceViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -42,7 +43,7 @@ class OtherWorkspaceViewModel(application: Application) : AndroidViewModel(appli
     private val _reminderList = MutableLiveData<ArrayList<Reminder>>()
     val reminderList: LiveData<ArrayList<Reminder>> get() = _reminderList
 
-    fun loadWorkspaceData(workspaceId: String) {
+    suspend fun loadWorkspaceData(workspaceId: String) {
         val currentUser = auth.currentUser
 
         if (currentUser != null) {
@@ -50,29 +51,34 @@ class OtherWorkspaceViewModel(application: Application) : AndroidViewModel(appli
 
             _isLoading.value = true
 
-            firestore.collection("workspaces")
-                .document(workspaceId)
-                .get()
-                .addOnSuccessListener { doc ->
-                    val members = doc.get("members") as? List<String> ?: emptyList()
+            try {
+                val doc = firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .get()
+                    .await()
 
-                    // Eğer kullanıcı members listesinde yoksa yönlendir
-                    if (!members.contains(userId)) {
-                        _toastMessage.value = "You do not have access to this area"
-                        _navigateHome.value = true
-                        return@addOnSuccessListener
-                    }
+                val members = doc.get("members") as? List<String> ?: emptyList()
 
-                    // Kullanıcı üyeyse verileri yükle
-                    _ownerId.value = doc.getString("ownerId") ?: ""
-                    _editableType.value = doc.getString("editableType") ?: ""
-                    _workspaceName.value = doc.getString("workspaceName") ?: ""
-                    _isLoading.value = false
+                // Eğer kullanıcı members listesinde yoksa yönlendir
+                if (!members.contains(userId)) {
+                    _toastMessage.value = "You do not have access to this area"
+                    delay(500)
+                    _navigateHome.value = true
+                    return
                 }
-                .addOnFailureListener { e ->
-                    _isLoading.value = false
-                    Log.e("Workspace", "Error fetching workspace: ${e.message}", e)
-                }
+
+                // Kullanıcı üyeyse verileri yükle
+                _ownerId.value = doc.getString("ownerId") ?: ""
+                _editableType.value = doc.getString("editableType") ?: ""
+                _workspaceName.value = doc.getString("workspaceName") ?: ""
+
+                _isLoading.value = false
+
+            } catch (e: Exception) {
+                _isLoading.value = false
+                Log.e("Workspace", "Error fetching workspace: ${e.message}", e)
+            }
+
 
         } else {
             Log.d("Workspace", "User not logged in")
@@ -80,50 +86,57 @@ class OtherWorkspaceViewModel(application: Application) : AndroidViewModel(appli
     }
 
 
-    fun loadRemindersList(workspaceId: String) {
+    suspend fun loadRemindersList(workspaceId: String) {
         val currentUser = auth.currentUser
+
+        if (currentUser == null) {
+            _toastMessage.value = "Error"
+            return
+        }
 
         _isLoading.value = true
 
-        if (currentUser != null) {
-
-            firestore.collection("workspaces")
+        try {
+            val documents = firestore.collection("workspaces")
                 .document(workspaceId)
                 .collection("reminders")
                 .get()
-                .addOnSuccessListener { documents ->
-                    val reminderList = ArrayList<Reminder>()
+                .await()
 
-                    documents.forEach { document ->
-                        val reminder = Reminder(
-                            id = document.id,
-                            title = document.getString("title") ?: "",
-                            description = document.getString("description") ?: "",
-                            isCompleted = document.getBoolean("isCompleted") ?: false,
-                            timestamp = document.get("timestamp").toString() ?: "",
-                            priority = document.getString("priority") ?: "",
-                            date = document.getString("date") ?: "",
-                            time = document.getString("time") ?: ""
-                        )
-                        reminderList.add(reminder)
-                    }
-                    reminderList.sortByDescending { reminder ->
-                        try {
-                            reminder.timestamp.toLong()
-                        } catch (e: Exception) {
-                            0L // hata durumunda varsayılan değer
-                        }
-                    }
+            val reminderList = ArrayList<Reminder>()
 
-                    _reminderList.value = reminderList
-                    _isLoading.value = false
-
-                }.addOnFailureListener { e ->
-                    _isLoading.value = false
-                    _toastMessage.value = e.toString()
+            documents.forEach { document ->
+                val reminder = Reminder(
+                    id = document.id,
+                    title = document.getString("title") ?: "",
+                    description = document.getString("description") ?: "",
+                    isCompleted = document.getBoolean("isCompleted") ?: false,
+                    timestamp = document.get("timestamp").toString() ?: "",
+                    priority = document.getString("priority") ?: "",
+                    date = document.getString("date") ?: "",
+                    time = document.getString("time") ?: ""
+                )
+                reminderList.add(reminder)
+            }
+            reminderList.sortByDescending { reminder ->
+                try {
+                    reminder.timestamp.toLong()
+                } catch (e: Exception) {
+                    0L // hata durumunda varsayılan değer
                 }
+            }
 
+            _reminderList.value = reminderList
+
+            _isLoading.value = false
+
+        }catch (e:Exception){
+            _isLoading.value = false
+            _toastMessage.value = e.toString()
         }
+
+
+
 
     }
 

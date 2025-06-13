@@ -8,16 +8,19 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentRegisterBinding
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.SuccessDialog
 import com.chnkcksk.reminderapp.viewmodel.RegisterViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
 
 
 class RegisterFragment : Fragment() {
@@ -27,7 +30,8 @@ class RegisterFragment : Fragment() {
 
     private val viewModel: RegisterViewModel by viewModels()
 
-    private val loadingManager= LoadingManager.getInstance()
+    private val loadingManager = LoadingManager.getInstance()
+    private val successDialog = SuccessDialog()
 
     private lateinit var auth: FirebaseAuth
 
@@ -57,22 +61,29 @@ class RegisterFragment : Fragment() {
 
     fun setupLiveDatas() {
 
+        viewModel.viewSuccessDialog.observe(viewLifecycleOwner){
+            if (it == true){
+                successDialog.showSuccessDialog(requireContext())
+            }
+        }
+
         viewModel.toastMessage.observe(viewLifecycleOwner) { message ->
             Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
         }
 
-        viewModel.navigateVerify.observe(viewLifecycleOwner){ navigate ->
-            if (navigate == true){
-                val action = RegisterFragmentDirections.actionRegisterFragmentToEmailVerifyFragment()
+        viewModel.navigateVerify.observe(viewLifecycleOwner) { navigate ->
+            if (navigate == true) {
+                val action =
+                    RegisterFragmentDirections.actionRegisterFragmentToEmailVerifyFragment()
                 Navigation.findNavController(requireView()).navigate(action)
             }
         }
 
-        viewModel.isloading.observe(viewLifecycleOwner){ isLoading ->
+        viewModel.isloading.observe(viewLifecycleOwner) { isLoading ->
 
-            if (isLoading==true){
+            if (isLoading == true) {
                 loadingManager.showLoading(requireContext())
-            }else{
+            } else {
                 loadingManager.dismissLoading()
             }
 
@@ -87,13 +98,21 @@ class RegisterFragment : Fragment() {
             Navigation.findNavController(requireView()).navigate(action)
         }
 
+        binding.passwordVisibilityToggle.setOnClickListener {
+            viewModel.togglePasswordVisibility(
+                binding.registerPasswordET,
+                binding.passwordVisibilityToggle
+            )
+        }
+
         requireActivity().onBackPressedDispatcher.addCallback(
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
 
 
                 override fun handleOnBackPressed() {
-                    val action = RegisterFragmentDirections.actionRegisterFragmentToWelcomeFragment()
+                    val action =
+                        RegisterFragmentDirections.actionRegisterFragmentToWelcomeFragment()
                     Navigation.findNavController(requireView()).navigate(action)
 
                 }
@@ -103,10 +122,13 @@ class RegisterFragment : Fragment() {
             val name = binding.registerNameET.text.toString()
             val email = binding.registerEmailET.text.toString()
             val password = binding.registerPasswordET.text.toString()
-            viewModel.register(name, email, password)
+
+            lifecycleScope.launch {
+                viewModel.register(name, email, password)
+            }
+
         }
     }
-
 
 
     override fun onDestroy() {

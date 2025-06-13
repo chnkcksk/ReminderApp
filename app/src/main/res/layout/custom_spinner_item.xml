@@ -6,6 +6,7 @@
     android:background="@color/main_bg_color"
     android:fontFamily="@font/public_sans_bold"
     android:layout_height="wrap_content"
-    android:padding="16dp"
-    android:textColor="#000000"
+    android:paddingVertical="16dp"
+    android:paddingLeft="16dp"
+    android:paddingRight="10dp"
     android:textSize="16sp" />

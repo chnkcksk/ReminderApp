@@ -5,11 +5,15 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class EditWorkspaceViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -46,83 +50,108 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     private val _memberNames = MutableLiveData<List<String>>()
     val memberNames: LiveData<List<String>> get() = _memberNames
 
-    fun fetchWorkspaceMemberNames(workspaceId: String) {
+    private val _viewSuccessDialog = MutableLiveData<Boolean>()
+    val viewSuccessDialog: LiveData<Boolean> get() = _viewSuccessDialog
+
+    suspend fun fetchWorkspaceMemberNames(workspaceId: String) {
         _isLoading.value = true
 
-        firestore.collection("workspaces")
-            .document(workspaceId)
-            .get()
-            .addOnSuccessListener { doc ->
-                val memberIds = doc.get("members") as? List<String> ?: emptyList()
-                val memberNamesList = mutableListOf<String>()
+        try {
+            val doc = firestore.collection("workspaces")
+                .document(workspaceId)
+                .get()
+                .await()
 
-                if (memberIds.isEmpty()) {
-                    _memberNames.value = memberNamesList
-                    _isLoading.value = false
-                    return@addOnSuccessListener
-                }
+            val memberIds = doc.get("members") as? List<String> ?: emptyList()
+            val memberNamesList = mutableListOf<String>()
 
-                var fetchedCount = 0
-
-                for (id in memberIds) {
-                    firestore.collection("Users")
-                        .document(id)
-                        .get()
-                        .addOnSuccessListener { userDoc ->
-                            val username = userDoc.getString("name") ?: "Unknown"
-                            memberNamesList.add(username)
-                            fetchedCount++
-
-                            if (fetchedCount == memberIds.size) {
-                                _memberNames.value = memberNamesList
-                                _isLoading.value = false
-                            }
-                        }
-                        .addOnFailureListener {
-                            memberNamesList.add("Unknown")
-                            fetchedCount++
-
-                            if (fetchedCount == memberIds.size) {
-                                _memberNames.value = memberNamesList
-                                _isLoading.value = false
-                            }
-                        }
-                }
-            }
-            .addOnFailureListener {
-                _toastMessage.value = "Could not load workspace members."
+            if (memberIds.isEmpty()) {
+                _memberNames.value = memberNamesList
                 _isLoading.value = false
+                return
             }
+
+            var fetchedCount = 0
+
+            for (id in memberIds) {
+                firestore.collection("Users")
+                    .document(id)
+                    .get()
+                    .addOnSuccessListener { userDoc ->
+                        val username = userDoc.getString("name") ?: "Unknown"
+                        memberNamesList.add(username)
+                        fetchedCount++
+
+                        if (fetchedCount == memberIds.size) {
+                            _memberNames.value = memberNamesList
+                            _isLoading.value = false
+                        }
+                    }
+                    .addOnFailureListener {
+                        memberNamesList.add("Unknown")
+                        fetchedCount++
+
+                        if (fetchedCount == memberIds.size) {
+                            _memberNames.value = memberNamesList
+                            _isLoading.value = false
+                        }
+                    }
+            }
+
+        } catch (e: Exception) {
+            _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = "Could not load workspace members."
+        }
+
+
     }
 
 
-    fun quitWorkspace(workspaceId: String) {
+    suspend fun quitWorkspace(workspaceId: String) {
         val currentUser = auth.currentUser
 
         if (currentUser != null) {
+
             val userId = currentUser.uid
+
             _isLoading.value = true
 
-            firestore.collection("workspaces")
-                .document(workspaceId)
-                .update("members", FieldValue.arrayRemove(userId))
-                .addOnSuccessListener {
-                    _toastMessage.value = "Successfully left the workspace."
-                    _isLoading.value = false
-                    _navigateHome.value = true
-                }
-                .addOnFailureListener { e ->
-                    _toastMessage.value = "Failed to leave workspace: ${e.localizedMessage}"
-                    _isLoading.value = false
-                }
+
+            try {
+                // Firestore işlemini await ile bekle
+                firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .update("members", FieldValue.arrayRemove(userId))
+                    .await()
+
+                // Burası ancak işlem başarılı olursa çalışır (addOnSuccessListener yerine)
+
+                // Başarılı olduktan sonra sıralı işlemler
+
+                _isLoading.value = false
+                delay(1200)
+                _viewSuccessDialog.value = true
+                delay(2000)
+                // Animasyon bitince navigasyon
+                _navigateHome.value = true
+
+            } catch (e: Exception) {
+                // Burası ancak işlem basarisiz olursa çalışır (addOnFailureListener yerine)
+                _isLoading.value = false
+                delay(1200)
+                _toastMessage.value = "Failed to leave workspace: ${e.localizedMessage}"
+            }
+
         } else {
-            _toastMessage.value = "User not found!"
             _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = "User not found!"
         }
     }
 
 
-    fun getWorkspaceData(workspaceId: String) {
+    suspend fun getWorkspaceData(workspaceId: String) {
         val currentUser = auth.currentUser
 
         if (currentUser != null && workspaceId.isNotEmpty()) {
@@ -130,67 +159,80 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
 
             _isLoading.value = true
 
-            firestore.collection("workspaces")
-                .document(workspaceId)
-                .get()
-                .addOnSuccessListener { doc ->
+            try {
+                val doc = firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .get()
+                    .await()
 
-                    val members = doc.get("members") as? List<String> ?: emptyList()
+                val members = doc.get("members") as? List<String> ?: emptyList()
 
-                    // Eğer kullanıcı members listesinde yoksa yönlendir
-                    if (!members.contains(userId)) {
-                        _toastMessage.value = "You do not have access to this area"
-                        _navigateHome.value = true
-                        return@addOnSuccessListener
-                    }
-
-                    _isLoading.value = false
-                    _workspaceName.value = doc.getString("workspaceName") ?: ""
-                    _workspaceType.value = doc.getString("workspaceType") ?: ""
-                    _editableType.value = doc.getString("editableType") ?:""
-                    _workspaceCode.value = doc.getString("joinCode") ?: ""
-                    _ownerId.value = doc.getString("ownerId") ?: ""
+                // Eğer kullanıcı members listesinde yoksa yönlendir
+                if (!members.contains(userId)) {
+                    _toastMessage.value = "You do not have access to this area"
+                    _navigateHome.value = true
+                    return
                 }
-                .addOnFailureListener { e ->
-                    _isLoading.value = false
-                    Log.e("Workspace", "Error fetching workspace: ${e.message}", e)
-                }
+
+                _isLoading.value = false
+                _workspaceName.value = doc.getString("workspaceName") ?: ""
+                _workspaceType.value = doc.getString("workspaceType") ?: ""
+                _editableType.value = doc.getString("editableType") ?: ""
+                _workspaceCode.value = doc.getString("joinCode") ?: ""
+                _ownerId.value = doc.getString("ownerId") ?: ""
+            } catch (e: Exception) {
+                _isLoading.value = false
+                Log.e("Workspace", "Error fetching workspace: ${e.message}", e)
+            }
+
 
         } else {
             Log.d("Workspace", "User not logged in")
         }
     }
 
-    fun deleteWorkspace(workspaceId: String){
+    suspend fun deleteWorkspace(workspaceId: String) {
         val currentUser = auth.currentUser
 
-        if (currentUser==null){
+        if (currentUser == null) {
             return
             _toastMessage.value = "Error"
         }
 
         _isLoading.value = true
 
-        firestore.collection("workspaces")
-            .document(workspaceId)
-            .delete()
-            .addOnSuccessListener {
-                _isLoading.value = false
-                _toastMessage.value = "Workspace successfully deleted"
-                _navigateWorkspace.value = true
-            }
-            .addOnFailureListener {
-                _isLoading.value = false
-                _toastMessage.value = "Workspace could not be deleted"
-            }
+        try {
+            firestore.collection("workspaces")
+                .document(workspaceId)
+                .delete()
+                .await()
+
+            _isLoading.value = false
+            delay(1200)
+            _viewSuccessDialog.value = true
+            delay(2000)
+            _navigateWorkspace.value = true
+
+        } catch (e: Exception) {
+
+            _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = "Workspace could not be deleted"
+        }
 
 
     }
 
-    fun editWorkspace(workspaceId: String, editedWorkspaceName: String, wT:String, eT:String, kickOthers:Boolean){
+    suspend fun editWorkspace(
+        workspaceId: String,
+        editedWorkspaceName: String,
+        wT: String,
+        eT: String,
+        kickOthers: Boolean
+    ) {
         val currentUser = auth.currentUser
 
-        if (currentUser==null){
+        if (currentUser == null) {
             return
             _toastMessage.value = "Error"
         }
@@ -199,64 +241,70 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
 
 
 
-        if (kickOthers == true) {
-            // Önce mevcut üyeleri çekiyoruz
-            firestore.collection("workspaces")
-                .document(workspaceId)
-                .get()
-                .addOnSuccessListener { document ->
-                    val currentMembers = document.get("members") as? List<String> ?: listOf()
-                    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+        try {
 
-                    // Sadece kendi userId'ni içeren yeni members listesi oluştur
-                    val newMembers = listOf(currentUserId)
+            if (kickOthers == true) {
+                // Önce mevcut üyeleri çekiyoruz
+                val document = firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .get()
+                    .await()
 
-                    val updatedData = hashMapOf<String, Any>(
-                        "workspaceName" to editedWorkspaceName,
-                        "workspaceType" to wT,
-                        "editableType" to eT,
-                        "members" to newMembers // diğer üyeleri çıkar
-                    )
+                val currentMembers = document.get("members") as? List<String> ?: listOf()
+                val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
-                    // Firestore'da güncelleme işlemi
-                    firestore.collection("workspaces")
-                        .document(workspaceId)
-                        .update(updatedData)
-                        .addOnSuccessListener {
-                            _toastMessage.value = "Workspace edited successfully"
-                            _isLoading.value = false
-                            _navigateWorkspace.value = true
-                        }
-                        .addOnFailureListener {
-                            _toastMessage.value = "Error"
-                            _isLoading.value = false
-                        }
-                }
-                .addOnFailureListener {
-                    _toastMessage.value = "Failed to fetch current members"
-                    _isLoading.value = false
-                }
-        } else {
-            // Diğer güncelleme (üyeleri değiştirmeden)
-            val updatedData = hashMapOf<String, Any>(
-                "workspaceName" to editedWorkspaceName,
-                "workspaceType" to wT,
-                "editableType" to eT
-            )
+                // Sadece kendi userId'ni içeren yeni members listesi oluştur
+                val newMembers = listOf(currentUserId)
 
-            firestore.collection("workspaces")
-                .document(workspaceId)
-                .update(updatedData)
-                .addOnSuccessListener {
-                    _toastMessage.value = "Workspace edited successfully"
-                    _isLoading.value = false
-                    _navigateWorkspace.value = true
-                }
-                .addOnFailureListener {
-                    _toastMessage.value = "Error"
-                    _isLoading.value = false
-                }
+                val updatedData = hashMapOf<String, Any>(
+                    "workspaceName" to editedWorkspaceName,
+                    "workspaceType" to wT,
+                    "editableType" to eT,
+                    "members" to newMembers // diğer üyeleri çıkar
+                )
+
+                // Firestore'da güncelleme işlemi
+                firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .update(updatedData)
+                    .await()
+
+                _isLoading.value = false
+                delay(1200)
+                _viewSuccessDialog.value = true
+                delay(2000)
+                _navigateWorkspace.value = true
+
+
+
+            } else {
+                // Diğer güncelleme (üyeleri değiştirmeden)
+                val updatedData = hashMapOf<String, Any>(
+                    "workspaceName" to editedWorkspaceName,
+                    "workspaceType" to wT,
+                    "editableType" to eT
+                )
+
+                firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .update(updatedData)
+                    .await()
+
+                _isLoading.value = false
+                delay(1200)
+                _toastMessage.value = "Workspace edited successfully"
+                delay(500)
+                _navigateWorkspace.value = true
+            }
+
+        }   catch (e:Exception){
+            _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = "Error: ${e.localizedMessage}"
+
+
         }
+
 
 
 

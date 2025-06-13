@@ -8,6 +8,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class AddReminderViewModel(application: Application) : AndroidViewModel(application) {
     private val auth: FirebaseAuth = Firebase.auth
@@ -29,15 +34,13 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
     val setNotification: LiveData<Boolean> get() = _setNotification
 
 
-
-
-    fun addReminder(
+    suspend fun addReminder(
         title: String,
         description: String,
         priority: String,
         date: String,
         time: String,
-        isNotificationChecked:Boolean
+        isNotificationChecked: Boolean
 
     ) {
 
@@ -49,6 +52,7 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
             _toastMessage.value = "User login required"
             return
         }
+
         val reminder = hashMapOf(
             "title" to title,
             "description" to description,
@@ -60,26 +64,34 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
             "reminder" to isNotificationChecked
         )
 
-        firestore.collection("Users")
-            .document(currentUser.uid)
-            .collection("workspaces")
-            .document("personalWorkspace")
-            .collection("reminders")
-            .add(reminder)
-            .addOnSuccessListener {
+        try {
 
-                if (isNotificationChecked){
-                    _setNotification.value = true
-                }
+            firestore.collection("Users")
+                .document(currentUser.uid)
+                .collection("workspaces")
+                .document("personalWorkspace")
+                .collection("reminders")
+                .add(reminder)
+                .await()
 
-                _isLoading.value = false
-                _navigateHome.value = true
-                _toastMessage.value = "Reminder saved"
+
+            if (isNotificationChecked) {
+                _setNotification.value = true
             }
-            .addOnFailureListener {
-                _isLoading.value = false
-                _toastMessage.value = "Reminder could not be saved!"
-            }
+
+
+            _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = "Reminder saved"
+            delay(500)
+            _navigateHome.value = true
+
+
+        } catch (e: Exception) {
+            _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = "Reminder could not be saved!"
+        }
 
 
     }

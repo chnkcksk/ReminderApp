@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <solid android:color="@color/main_bg_color" />
-    <corners android:radius="4dp" />
-    <stroke android:width="2dp" android:color="@color/edittext_color"/>
-    <!--<padding
-        android:left="16dp"
-        android:top="12dp"
-        android:right="16dp"
-        android:bottom="12dp"/>-->
-</shape>
+    <!-- Focus durumunda -->
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/main_bg_color" />
+            <corners android:radius="4dp" />
+            <stroke android:width="2dp" android:color="@color/primary_color" />
+        </shape>
+    </item>
+
+    <!-- Normal (focus olmayan) durumda -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/main_bg_color" />
+            <corners android:radius="4dp" />
+            <stroke android:width="2dp" android:color="@color/edittext_color" />
+        </shape>
+    </item>
+
+</selector>

@@ -10,6 +10,8 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.tasks.await
 
 class EditReminderViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -45,38 +47,40 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
 
     private val currentUser = auth.currentUser
 
-    fun deleteReminder(workspaceId: String?, reminderId: String?) {
+    suspend fun deleteReminder(workspaceId: String?, reminderId: String?) {
         if (currentUser != null && workspaceId != null && reminderId != null) {
 
             val userId = currentUser.uid
 
             _isLoading.value = true
 
-            firestore.collection("Users")
-                .document(userId)
-                .collection("workspaces")
-                .document(workspaceId)
-                .collection("reminders")
-                .document(reminderId)
-                .delete()
-                .addOnSuccessListener {
-                    _navigateHome.value = true
-                    _toastMessage.value = "Reminder deleted"
-                    _isLoading.value = false
-                }
-                .addOnFailureListener {
-                    _toastMessage.value = "Reminder could not be deleted"
-                    _isLoading.value = false
-                }
+            try {
+                firestore.collection("Users").document(userId).collection("workspaces")
+                    .document(workspaceId).collection("reminders").document(reminderId).delete()
+                    .await()
+
+                _isLoading.value = false
+                delay(1200)
+                _toastMessage.value = "Reminder deleted"
+                delay(500)
+                _navigateHome.value = true
+
+
+            } catch (e: Exception) {
+                _isLoading.value = false
+                delay(1200)
+                _toastMessage.value = "Reminder could not be deleted"
+            }
 
 
         } else {
-            _toastMessage.value = "Error!"
             _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = "Error!"
         }
     }
 
-    fun editReminderData(
+    suspend fun editReminderData(
         workspaceId: String?,
         reminderId: String?,
         title: String,
@@ -85,7 +89,6 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
         date: String,
         time: String
     ) {
-
 
 
         if (currentUser != null && workspaceId != null && reminderId != null) {
@@ -102,29 +105,35 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
                 "time" to time,
             )
 
-            firestore
-                .collection("Users").document(userId)
-                .collection("workspaces").document(workspaceId)
-                .collection("reminders").document(reminderId)
-                .update(updatedData)
-                .addOnSuccessListener {
-                    _toastMessage.value = "Reminder updated!"
-                    _isLoading.value = false
-                    _navigateHome.value = true
-                }.addOnFailureListener {
-                    _toastMessage.value = "Reminder could not be updated! Please try again."
-                    _isLoading.value = false
-                }
+            try {
+                firestore.collection("Users").document(userId).collection("workspaces")
+                    .document(workspaceId).collection("reminders").document(reminderId)
+                    .update(updatedData).await()
+
+
+
+                _isLoading.value = false
+                delay(1200)
+                _toastMessage.value = "Reminder updated!"
+                delay(500)
+                _navigateHome.value = true
+            } catch (e: Exception) {
+                _isLoading.value = false
+                delay(1200)
+                _toastMessage.value = "Reminder could not be updated! Please try again."
+
+            }
+
 
         } else {
-            _toastMessage.value = "Error."
             _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = "Error."
         }
 
     }
 
-    fun loadReminderData(workspaceId: String?, reminderId: String?) {
-
+    suspend fun loadReminderData(workspaceId: String?, reminderId: String?) {
 
 
         if (currentUser != null && workspaceId != null && reminderId != null) {
@@ -132,33 +141,34 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
 
             _isLoading.value = true
 
-            firestore.collection("Users")
-                .document(userId)
-                .collection("workspaces")
-                .document(workspaceId)
-                .collection("reminders")
-                .document(reminderId)
-                .get()
-                .addOnSuccessListener { doc ->
-                    if (doc != null && doc.exists()) {
+            try {
+                val doc = firestore.collection("Users").document(userId).collection("workspaces")
+                    .document(workspaceId).collection("reminders").document(reminderId).get()
+                    .await()
 
-                        //priority,date,time
-                        _title.value = doc.getString("title")
-                        _description.value = doc.getString("description")
-                        _priority.value = doc.getString("priority")
-                        _selectedDate.value = doc.getString("date")
-                        _selectedTime.value = doc.getString("time")
+                if (doc != null && doc.exists()) {
 
-                        _isLoading.value = false
-                    }
-                }.addOnFailureListener { e ->
-                    _toastMessage.value = "Error: $e"
+                    //priority,date,time
+                    _title.value = doc.getString("title")
+                    _description.value = doc.getString("description")
+                    _priority.value = doc.getString("priority")
+                    _selectedDate.value = doc.getString("date")
+                    _selectedTime.value = doc.getString("time")
+
                     _isLoading.value = false
                 }
 
+            } catch (e: Exception) {
+                _isLoading.value = false
+                delay(1200)
+                _toastMessage.value = "Error: $e"
+            }
+
+
         } else {
-            _toastMessage.value = "Error!"
             _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = "Error!"
         }
 
     }

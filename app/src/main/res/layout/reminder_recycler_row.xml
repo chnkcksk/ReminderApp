@@ -58,12 +58,12 @@
 
     <TextView
         android:id="@+id/priorityTV"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
         android:text="N"
         android:layout_gravity="center"
-        android:layout_marginLeft="6dp"
-        android:layout_marginRight="8dp"
+        android:gravity="center"
+        android:layout_marginHorizontal="6dp"
         android:textSize="14sp"
         android:fontFamily="@font/public_sans_bold"/>
 

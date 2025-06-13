@@ -27,7 +27,7 @@ class LoadingManager private constructor() {
 
     companion object {
         private const val DEFAULT_TIMEOUT = 10000L // 10 saniye
-        private const val MIN_SHOW_TIME = 700L // Minimum gösterim süresi (ms)
+        private const val MIN_SHOW_TIME = 1200L // Minimum gösterim süresi (ms)
         private const val DISPLAY_DELAY = 200L // 200ms sonra göster
         private var instance: LoadingManager? = null
 
@@ -106,9 +106,19 @@ class LoadingManager private constructor() {
         loadingDialog?.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         loadingDialog?.setCancelable(false)
 
-        // Mesajı ayarla
-        //val messageTextView = loadingDialog?.findViewById<TextView>(R.id.loadingMessage)
-        //messageTextView?.text = message
+        // Lottie animasyonunu düzelt
+        val lottieAnimationView = loadingDialog?.findViewById<com.airbnb.lottie.LottieAnimationView>(R.id.loading_anim)
+        lottieAnimationView?.let {
+            // Loop'u true yap
+            it.repeatCount = com.airbnb.lottie.LottieDrawable.INFINITE
+            it.repeatMode = com.airbnb.lottie.LottieDrawable.RESTART
+            // Animasyonu yeniden başlat
+            it.playAnimation()
+        }
+
+        // Mesajı ayarla (eğer varsa)
+//        val messageTextView = loadingDialog?.findViewById<TextView>(R.id.loadingMessage)
+//        messageTextView?.text = message
 
         // Animasyonları yükle
         fadeInAnimation = AnimationUtils.loadAnimation(context, android.R.anim.fade_in)
@@ -126,17 +136,32 @@ class LoadingManager private constructor() {
         timeoutHandler.removeCallbacksAndMessages(null)
 
         if (loadingDialog?.isShowing == true) {
-            // Minimum gösterim süresini hesapla
             val displayTime = System.currentTimeMillis() - requestStartTime
             val remainingMinTime = Math.max(0, MIN_SHOW_TIME - displayTime)
 
-            loadingDialog?.window?.decorView?.startAnimation(fadeOutAnimation)
+            try {
+                // Eğer dialog hâlâ pencereye bağlıysa animasyonu başlat
+                if (loadingDialog?.window?.decorView?.windowToken != null) {
+                    loadingDialog?.window?.decorView?.startAnimation(fadeOutAnimation)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace() // Opsiyonel: loglamak için
+            }
+
             timeoutHandler.postDelayed({
-                loadingDialog?.dismiss()
-                loadingDialog = null
+                try {
+                    if (loadingDialog?.isShowing == true) {
+                        loadingDialog?.dismiss()
+                    }
+                } catch (e: IllegalArgumentException) {
+                    e.printStackTrace()
+                } finally {
+                    loadingDialog = null
+                }
             }, remainingMinTime)
         }
     }
+
 
     // Activity kapatıldığında çağrılmalı
     fun onDestroy() {

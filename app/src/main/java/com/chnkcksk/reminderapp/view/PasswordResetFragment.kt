@@ -13,6 +13,7 @@ import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentPasswordResetBinding
 import com.chnkcksk.reminderapp.databinding.FragmentRegisterBinding
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.SuccessDialog
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -26,6 +27,7 @@ class PasswordResetFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
 
     private val loadingManager = LoadingManager.getInstance()
+    private val successDialog = SuccessDialog()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,6 +98,7 @@ class PasswordResetFragment : Fragment() {
                             "Password reset link has been sent to $email address",
                             Toast.LENGTH_LONG
                         ).show()
+                        successDialog.showSuccessDialog(requireContext())
                         val action = PasswordResetFragmentDirections.actionPasswordResetFragmentToLoginFragment()
                         Navigation.findNavController(requireView()).navigate(action)
                     }else{

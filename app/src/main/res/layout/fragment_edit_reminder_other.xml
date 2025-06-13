@@ -57,6 +57,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
+            android:maxLength="30"
             android:hint="Title"
             android:layout_marginTop="28dp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -185,15 +186,12 @@
                 android:id="@+id/priorityOSpinner"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:gravity="center"
+                android:background="@android:color/transparent"
                 android:layout_gravity="center"
-                android:background="@color/main_bg_color"
                 android:clickable="true"
                 android:focusable="true"
-                android:fontFamily="@font/public_sans_bold"
-                android:foreground="?attr/selectableItemBackground"
-                android:padding="16dp"
-                android:text="None"
-                android:textSize="16sp" />
+                android:foreground="?attr/selectableItemBackground"/>
 
         </LinearLayout>
 

@@ -45,6 +45,8 @@
             android:layout_marginHorizontal="16dp"
             android:layout_marginTop="28dp"
             android:hint="Title"
+            android:maxLength="30"
+            android:maxLines="1"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textView10" />
@@ -101,10 +103,10 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:layout_gravity="center"
+                android:buttonTint="@color/secondary_color"
                 android:clickable="true"
                 android:focusable="true"
                 android:fontFamily="@font/public_sans_bold"
-                android:buttonTint="@color/secondary_color"
                 android:textColor="@color/primary_text_color"
                 app:buttonTint="@color/secondary_color" />
 
@@ -133,12 +135,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:padding="16dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
                 android:fontFamily="@font/public_sans_bold"
-                android:text="Today"
+                android:foreground="?attr/selectableItemBackground"
+                android:padding="16dp"
+                android:text="12/06/2025"
                 android:textSize="16sp" />
 
         </LinearLayout>
@@ -167,16 +169,15 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:padding="16dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
                 android:fontFamily="@font/public_sans_bold"
+                android:foreground="?attr/selectableItemBackground"
+                android:padding="16dp"
                 android:text="9:00 AM"
                 android:textSize="16sp" />
 
         </LinearLayout>
-
 
 
         <LinearLayout
@@ -202,15 +203,12 @@
                 android:id="@+id/prioritySpinner"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:gravity="center"
+                android:background="@android:color/transparent"
                 android:layout_gravity="center"
-                android:padding="16dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                android:background="@color/main_bg_color"
-                android:fontFamily="@font/public_sans_bold"
-                android:text="None"
-                android:textSize="16sp" />
+                android:foreground="?attr/selectableItemBackground"/>
 
         </LinearLayout>
 
@@ -264,10 +262,10 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
             android:layout_marginTop="50dp"
+            android:layout_marginBottom="60dp"
             android:text="Add"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginBottom="60dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayout6" />
 

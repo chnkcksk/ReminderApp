@@ -9,12 +9,12 @@
     android:gravity="center">
 
     <com.airbnb.lottie.LottieAnimationView
-        android:id="@+id/loading_anim"
+        android:id="@+id/success_animation"
         android:layout_width="150dp"
         android:layout_height="150dp"
         app:lottie_autoPlay="true"
-        app:lottie_loop="true"
-        app:lottie_rawRes="@raw/infinity_loop"
+        app:lottie_loop="false"
+        app:lottie_rawRes="@raw/anim_success2"
         app:lottie_speed="1.0" />
 
 </LinearLayout>

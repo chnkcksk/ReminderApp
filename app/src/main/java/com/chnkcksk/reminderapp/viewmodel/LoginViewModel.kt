@@ -13,6 +13,7 @@ import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.chnkcksk.reminderapp.R
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -25,6 +26,9 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -63,63 +67,77 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         _isLoading.value = true
         try {
             val account = task.getResult(ApiException::class.java)
-            firebaseAuthWithGoogle(account.idToken!!)
+            viewModelScope.launch {
+                firebaseAuthWithGoogle(account.idToken!!)
+            }
+
         } catch (e: ApiException) {
             _isLoading.value = false
             _toastMessage.value = "Google sign in failed: ${e.localizedMessage}"
         }
     }
 
-    private fun firebaseAuthWithGoogle(idToken: String) {
+    private suspend fun firebaseAuthWithGoogle(idToken: String) {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
-        auth.signInWithCredential(credential)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val user = auth.currentUser
-                    val uid = user?.uid
 
-                    if (uid != null) {
-                        // Kullanıcının Firestore'da mevcut olup olmadığını kontrol et
-                        firestore.collection("Users").document(uid).get()
-                            .addOnSuccessListener { document ->
-                                if (!document.exists()) {
-                                    // Yeni kullanıcı, Firestore'a kaydet
-                                    val userMap = hashMapOf(
-                                        "email" to user.email,
-                                        "name" to user.displayName,
-                                        "emailVerified" to true // Google hesapları zaten doğrulanmış
-                                    )
+        try {
+            // Firebase Auth ile giriş yap
+            val authResult = auth.signInWithCredential(credential).await()
 
-                                    firestore.collection("Users").document(uid).set(userMap)
-                                        .addOnSuccessListener {
-                                            _isLoading.value = false
-                                            _toastMessage.value = "Welcome! Account created successfully."
-                                            _navigateToHome.value = true
-                                        }
-                                        .addOnFailureListener { e ->
-                                            _isLoading.value = false
-                                            _toastMessage.value = "Failed to save user info: ${e.localizedMessage}"
-                                        }
+            if (authResult.user != null) {
+                val user = auth.currentUser
+                val uid = user?.uid
 
+                if (uid != null) {
+                    // Kullanıcının Firestore'da mevcut olup olmadığını kontrol et
+                    val document = firestore.collection("Users")
+                        .document(uid)
+                        .get()
+                        .await()
 
+                    if (!document.exists()) {
+                        // Yeni kullanıcı, Firestore'a kaydet
+                        val userMap = hashMapOf(
+                            "email" to user.email,
+                            "name" to user.displayName,
+                            "emailVerified" to true // Google hesapları zaten doğrulanmış
+                        )
 
-                                } else {
-                                    // Mevcut kullanıcı
-                                    _isLoading.value = false
-                                    _toastMessage.value = "Welcome back!"
-                                    _navigateToHome.value = true
-                                }
-                            }
-                            .addOnFailureListener { e ->
-                                _isLoading.value = false
-                                _toastMessage.value = "Database error: ${e.localizedMessage}"
-                            }
+                        firestore.collection("Users")
+                            .document(uid)
+                            .set(userMap)
+                            .await()
+
+                        _isLoading.value = false
+                        delay(1200)
+                        _toastMessage.value = "Welcome! Account created successfully."
+                        delay(500)
+                        _navigateToHome.value = true
+
+                    } else {
+                        // Mevcut kullanıcı
+                        _isLoading.value = false
+                        delay(1200)
+                        _toastMessage.value = "Welcome back!"
+                        delay(500)
+                        _navigateToHome.value = true
                     }
                 } else {
                     _isLoading.value = false
-                    _toastMessage.value = "Authentication failed: ${task.exception?.localizedMessage}"
+                    delay(1200)
+                    _toastMessage.value = "Failed to get user ID"
                 }
+            } else {
+                _isLoading.value = false
+                delay(1200)
+                _toastMessage.value = "Authentication failed"
             }
+
+        } catch (e: Exception) {
+            _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = "Authentication failed: ${e.localizedMessage}"
+        }
     }
 
     fun togglePasswordVisibility(editText: EditText, toggleButton: ImageButton) {
@@ -137,41 +155,40 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         editText.setSelection(editText.text.length)
     }
 
-    fun login(email: String, password: String) {
-        if (email.isNotEmpty() && password.isNotEmpty()) {
-            _isLoading.value = true
-
-            auth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val user = auth.currentUser
-
-                        user?.reload()?.addOnCompleteListener { reloadTask ->
-                            if (reloadTask.isSuccessful) {
-                                if (user.isEmailVerified) {
-                                    _navigateToHome.value = true
-                                } else {
-                                    auth.signOut()
-                                    _toastMessage.value = "Please verify your email before logging in."
-                                    _navigateVerify.value = true
-                                }
-                            } else {
-                                _toastMessage.value = "Failed to verify email status. Please try again."
-                            }
-                            _isLoading.value = false
-                        }
-
-                    }
-                }
-                .addOnFailureListener { e ->
-                    _isLoading.value = false
-                    _toastMessage.value = e.localizedMessage
-                }
-
-        } else {
+    suspend fun login(email: String, password: String) {
+        if (email.isEmpty() || password.isEmpty()) {
             _isLoading.value = false
             _toastMessage.value = "Please enter email and password!"
+            return
         }
+
+        try {
+            _isLoading.value = true
+
+            val result = auth.signInWithEmailAndPassword(email, password).await()
+            val user = result.user ?: throw Exception("User not found")
+
+            user.reload().await()
+
+            if (user.isEmailVerified) {
+                _isLoading.value = false
+                delay(1200)
+                _navigateToHome.value = true
+            } else {
+                auth.signOut()
+                _isLoading.value = false
+                delay(1200)
+                _toastMessage.value = "Please verify your email before logging in."
+                delay(500)
+                _navigateVerify.value = true
+            }
+
+        } catch (e: Exception) {
+            _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = e.localizedMessage ?: "Login failed"
+        }
+        //finally { }
     }
 
 }

@@ -20,6 +20,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -35,6 +36,8 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -409,14 +412,20 @@ class AddReminderFragment : Fragment() {
                 Toast.makeText(requireContext(), "Please fill in the blanks!", Toast.LENGTH_LONG)
                     .show()
             } else {
-                viewModel.addReminder(
-                    title,
-                    description,
-                    priority,
-                    selectedDate,
-                    selectedTime,
-                    isNotificationChecked
-                )
+
+                lifecycleScope.launch {
+
+                    viewModel.addReminder(
+                        title,
+                        description,
+                        priority,
+                        selectedDate,
+                        selectedTime,
+                        isNotificationChecked
+                    )
+                }
+
+
             }
 
         }
@@ -443,7 +452,7 @@ class AddReminderFragment : Fragment() {
         //listeyi tanimla
         val priorities = resources.getStringArray(R.array.priorities)
         val adapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, priorities)
+            ArrayAdapter(requireContext(), R.layout.custom_spinner_item, priorities)
         adapter.setDropDownViewResource(R.layout.custom_spinner_item)
         binding.prioritySpinner.adapter = adapter
 

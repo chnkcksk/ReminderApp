@@ -59,6 +59,7 @@
             android:layout_marginHorizontal="16dp"
             android:hint="Title"
             android:layout_marginTop="28dp"
+            android:maxLength="30"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.843"
             app:layout_constraintStart_toStartOf="parent"
@@ -185,15 +186,12 @@
                 android:id="@+id/prioritySpinner"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:gravity="center"
+                android:background="@android:color/transparent"
                 android:layout_gravity="center"
-                android:padding="16dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                android:background="@color/main_bg_color"
-                android:fontFamily="@font/public_sans_bold"
-                android:text="None"
-                android:textSize="16sp" />
+                android:foreground="?attr/selectableItemBackground"/>
 
         </LinearLayout>
 

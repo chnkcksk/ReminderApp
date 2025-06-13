@@ -43,6 +43,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:hint="Workspace Name"
+            android:maxLength="30"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/backButton" />
@@ -80,15 +81,12 @@
                 android:id="@+id/editableTypeSpinner"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:gravity="center"
+                android:background="@android:color/transparent"
                 android:layout_gravity="center"
-                android:background="@color/main_bg_color"
                 android:clickable="true"
                 android:focusable="true"
-                android:fontFamily="@font/public_sans_bold"
-                android:foreground="?attr/selectableItemBackground"
-                android:padding="16dp"
-                android:text="None"
-                android:textSize="16sp" />
+                android:foreground="?attr/selectableItemBackground"/>
 
 
         </LinearLayout>
@@ -126,15 +124,12 @@
                 android:id="@+id/workspaceTypeSpinner"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:gravity="center"
+                android:background="@android:color/transparent"
                 android:layout_gravity="center"
-                android:background="@color/main_bg_color"
                 android:clickable="true"
                 android:focusable="true"
-                android:fontFamily="@font/public_sans_bold"
-                android:foreground="?attr/selectableItemBackground"
-                android:padding="16dp"
-                android:text="None"
-                android:textSize="16sp" />
+                android:foreground="?attr/selectableItemBackground"/>
 
 
         </LinearLayout>

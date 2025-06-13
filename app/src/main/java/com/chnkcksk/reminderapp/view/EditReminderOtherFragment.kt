@@ -13,6 +13,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentEditReminderBinding
@@ -24,6 +25,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -68,8 +70,12 @@ class EditReminderOtherFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
 
-        viewModel.loadReminderData(workspaceId, reminderId)
-        viewModel.loadWorkspaceData(workspaceId)
+
+        lifecycleScope.launch {
+            viewModel.loadReminderData(workspaceId, reminderId)
+            viewModel.loadWorkspaceData(workspaceId)
+        }
+
 
         setupSpinner()
         setupDateAndTimePicker()
@@ -125,7 +131,7 @@ class EditReminderOtherFragment : Fragment() {
         //listeyi tanimla
         val priorities = resources.getStringArray(R.array.priorities)
         val adapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, priorities)
+            ArrayAdapter(requireContext(), R.layout.custom_spinner_item, priorities)
         adapter.setDropDownViewResource(R.layout.custom_spinner_item)
         binding.priorityOSpinner.adapter = adapter
 
@@ -257,15 +263,19 @@ class EditReminderOtherFragment : Fragment() {
                 val date = binding.editReminderODate.text.toString()
                 val time = binding.editReminderOTime.text.toString()
 
-                viewModel.editReminderData(
-                    workspaceId,
-                    reminderId,
-                    title,
-                    desc,
-                    priority,
-                    date,
-                    time
-                )
+                lifecycleScope.launch {
+                    viewModel.editReminderData(
+                        workspaceId,
+                        reminderId,
+                        title,
+                        desc,
+                        priority,
+                        date,
+                        time
+                    )
+                }
+
+
             }
 
             requireActivity().onBackPressedDispatcher.addCallback(
@@ -285,7 +295,10 @@ class EditReminderOtherFragment : Fragment() {
                     .setTitle("Are You Sure?")
                     .setMessage("Are you sure you want to delete the reminder?")
                     .setPositiveButton("Yes") { _, _ ->
-                        viewModel.deleteReminder(workspaceId, reminderId)
+                        lifecycleScope.launch {
+                            viewModel.deleteReminder(workspaceId, reminderId)
+                        }
+
                     }.setNegativeButton("No", null)
                     .setCancelable(false)
                     .create()

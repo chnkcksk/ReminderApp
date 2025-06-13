@@ -13,6 +13,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentEditReminderBinding
@@ -25,6 +26,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -68,8 +70,11 @@ class EditReminderFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        lifecycleScope.launch {
+            viewModel.loadReminderData(workspaceId, reminderId)
+        }
 
-        viewModel.loadReminderData(workspaceId, reminderId)
+
 
         setupSpinner()
         setupDateAndTimePicker()
@@ -125,7 +130,7 @@ class EditReminderFragment : Fragment() {
         //listeyi tanimla
         val priorities = resources.getStringArray(R.array.priorities)
         val adapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, priorities)
+            ArrayAdapter(requireContext(), R.layout.custom_spinner_item, priorities)
         adapter.setDropDownViewResource(R.layout.custom_spinner_item)
         binding.prioritySpinner.adapter = adapter
 
@@ -217,21 +222,31 @@ class EditReminderFragment : Fragment() {
 
     }
 
-    private fun cancelEditAndGoBack(){
+    private fun cancelEditAndGoBack() {
         AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
             .setTitle("Are you sure?")
             .setMessage("Are you sure you want to cancel the edit and leave?")
-            .setPositiveButton("Yes"){_,_ ->
+            .setPositiveButton("Yes") { _, _ ->
                 goBack()
             }
-            .setNegativeButton("No",null)
+            .setNegativeButton("No", null)
             .setCancelable(false)
             .create()
             .apply {
                 setOnShowListener {
                     // Butonların metin rengini değiştir
-                    getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.primary_text_color))
-                    getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                    getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(
+                        ContextCompat.getColor(
+                            requireContext(),
+                            R.color.primary_text_color
+                        )
+                    )
+                    getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+                        ContextCompat.getColor(
+                            requireContext(),
+                            R.color.secondary_color
+                        )
+                    )
                 }
             }
             .show()
@@ -251,15 +266,19 @@ class EditReminderFragment : Fragment() {
                 val date = binding.editReminderDate.text.toString()
                 val time = binding.editReminderTime.text.toString()
 
-                viewModel.editReminderData(
-                    workspaceId,
-                    reminderId,
-                    title,
-                    desc,
-                    priority,
-                    date,
-                    time
-                )
+                lifecycleScope.launch {
+                    viewModel.editReminderData(
+                        workspaceId,
+                        reminderId,
+                        title,
+                        desc,
+                        priority,
+                        date,
+                        time
+                    )
+                }
+
+
             }
 
             deleteReminderButton.setOnClickListener {
@@ -268,15 +287,28 @@ class EditReminderFragment : Fragment() {
                     .setTitle("Are You Sure?")
                     .setMessage("Are you sure you want to delete the reminder?")
                     .setPositiveButton("Yes") { _, _ ->
-                        viewModel.deleteReminder(workspaceId, reminderId)
+                        lifecycleScope.launch {
+                            viewModel.deleteReminder(workspaceId, reminderId)
+                        }
+
                     }.setNegativeButton("No", null)
                     .setCancelable(false)
                     .create()
                     .apply {
                         setOnShowListener {
                             // Butonların metin rengini değiştir
-                            getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.primary_text_color))
-                            getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                            getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(
+                                ContextCompat.getColor(
+                                    requireContext(),
+                                    R.color.primary_text_color
+                                )
+                            )
+                            getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+                                ContextCompat.getColor(
+                                    requireContext(),
+                                    R.color.secondary_color
+                                )
+                            )
                         }
                     }
                     .show()

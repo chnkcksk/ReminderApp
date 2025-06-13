@@ -42,6 +42,7 @@ import com.chnkcksk.reminderapp.viewmodel.HomeViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.tasks.Tasks
+import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.auth.ktx.auth
@@ -141,7 +142,11 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupReminders() {
-        viewModel.loadRemindersList()
+
+        lifecycleScope.launch {
+            viewModel.loadRemindersList()
+        }
+
 
         val adapter = ReminderAdapter(
             requireContext(),
@@ -209,7 +214,10 @@ class HomeFragment : Fragment() {
     // HomeFragment.kt - setupDrawerMenu() fonksiyonunda debugging ekleyin
 
     private fun setupDrawerMenu() {
-        viewModel.loadWorkspaces()
+        lifecycleScope.launch {
+            viewModel.loadWorkspaces()
+        }
+
 
         // Header setup
         val headerBinding = NavDrawerHeaderBinding.bind(binding.navHeader.root)

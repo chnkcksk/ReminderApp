@@ -18,6 +18,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginLeft="16dp"
+            android:maxLength="30"
             android:layout_marginTop="16dp"
             android:backgroundTint="@color/main_bg_color"
             android:src="@drawable/baseline_arrow_back_24"
@@ -69,6 +70,7 @@
             android:layout_marginHorizontal="16dp"
             android:layout_marginTop="36dp"
             android:hint="Email"
+            android:maxLength="40"
             android:paddingLeft="16dp"
             android:inputType="textEmailAddress"
             app:layout_constraintEnd_toEndOf="parent"
@@ -90,6 +92,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:hint="Password"
+                android:maxLength="30"
                 android:inputType="textPassword"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent" />
@@ -101,7 +104,8 @@
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
                 android:layout_marginEnd="4dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:background="@color/main_bg_color"
+                android:foreground="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Toggle password visibility"
                 android:src="@drawable/baseline_visibility_off_24" />
 

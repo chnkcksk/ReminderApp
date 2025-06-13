@@ -18,16 +18,19 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentAddWorkspaceBinding
 import com.chnkcksk.reminderapp.databinding.FragmentHomeBinding
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.SuccessDialog
 import com.chnkcksk.reminderapp.viewmodel.AddWorkspaceViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
 
 
 class AddWorkspaceFragment : Fragment() {
@@ -38,6 +41,8 @@ class AddWorkspaceFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
 
     private val loadingManager = LoadingManager.getInstance()
+    private val successDialog = SuccessDialog()
+
     private val viewModel: AddWorkspaceViewModel by viewModels()
 
     private lateinit var joinCode: String
@@ -96,6 +101,12 @@ class AddWorkspaceFragment : Fragment() {
     }
 
     private fun setupLiveDatas() {
+
+        viewModel.viewSuccessDialog.observe(viewLifecycleOwner){
+            if (it == true){
+                successDialog.showSuccessDialog(requireContext())
+            }
+        }
 
         viewModel.toastMessage.observe(viewLifecycleOwner) { message ->
             Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
@@ -213,12 +224,15 @@ class AddWorkspaceFragment : Fragment() {
 
     private fun setupButtons() {
         binding.apply {
-            joinWorkspaceButton.setOnClickListener {
 
+            joinWorkspaceButton.setOnClickListener {
                 typedJoinCode = workspaceCodeET.text.toString()
 
-                viewModel.joinWorkspace(typedJoinCode)
+                lifecycleScope.launch {
+                    viewModel.joinWorkspace(typedJoinCode)
+                }
             }
+
 
             backButton.setOnClickListener {
                 goBack()
@@ -230,7 +244,14 @@ class AddWorkspaceFragment : Fragment() {
                 val workspaceType = binding.workspaceTypeSpinner.selectedItem.toString()
 
                 if (workspaceName.isNotEmpty()) {
-                    viewModel.createWorkspace(workspaceName, editableType, workspaceType)
+
+                    lifecycleScope.launch {
+
+                        viewModel.createWorkspace(workspaceName, editableType, workspaceType)
+
+                    }
+
+
                 } else {
                     Toast.makeText(
                         requireContext(),
@@ -259,13 +280,13 @@ class AddWorkspaceFragment : Fragment() {
         //listeyi tanimla
         val byOthers = resources.getStringArray(R.array.editable_type)
         val adapterOne =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, byOthers)
+            ArrayAdapter(requireContext(), R.layout.custom_spinner_item, byOthers)
         adapterOne.setDropDownViewResource(R.layout.custom_spinner_item)
         binding.editableTypeSpinner.adapter = adapterOne
 
         val workspaceType = resources.getStringArray(R.array.workspace_type)
         val adapterTwo =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, workspaceType)
+            ArrayAdapter(requireContext(), R.layout.custom_spinner_item, workspaceType)
         adapterTwo.setDropDownViewResource(R.layout.custom_spinner_item)
         binding.workspaceTypeSpinner.adapter = adapterTwo
 

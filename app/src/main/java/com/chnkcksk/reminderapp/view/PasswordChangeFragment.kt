@@ -11,16 +11,19 @@ import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentLoginBinding
 import com.chnkcksk.reminderapp.databinding.FragmentPasswordChangeBinding
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.SuccessDialog
 import com.chnkcksk.reminderapp.viewmodel.LoginViewModel
 import com.chnkcksk.reminderapp.viewmodel.PasswordChangeViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
 
 
 class PasswordChangeFragment : Fragment() {
@@ -31,6 +34,7 @@ class PasswordChangeFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
 
     private val loadingManager = LoadingManager.getInstance()
+    private val successDialog = SuccessDialog()
 
     private val viewModel: PasswordChangeViewModel by viewModels()
 
@@ -59,6 +63,13 @@ class PasswordChangeFragment : Fragment() {
     }
 
     private fun setupLiveDatas() {
+
+        viewModel.viewSuccessAnim.observe(viewLifecycleOwner){ viewSuccessAnim ->
+            if (viewSuccessAnim == true){
+                successDialog.showSuccessDialog(requireContext())
+            }
+
+        }
 
         viewModel.toastMessage.observe(viewLifecycleOwner) { message ->
             Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
@@ -111,7 +122,10 @@ class PasswordChangeFragment : Fragment() {
                 val newPassw = newPasswET.text.toString()
                 val newPasswAgain = newPasswAgainET.text.toString()
 
-                viewModel.reAuthenticateAndChangePassword(oldPassw, newPassw, newPasswAgain)
+                lifecycleScope.launch {
+                    viewModel.reAuthenticateAndChangePassword(oldPassw, newPassw, newPasswAgain)
+                }
+
             }
 
             backButton.setOnClickListener {
