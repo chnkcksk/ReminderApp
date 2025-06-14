@@ -243,7 +243,7 @@ class AddReminderFragment : Fragment() {
             channelId = "main_channel",
             channelName = "Home Page Notifications",
             channelDescription = "Home page custom notifications",
-            iconResId = R.drawable.ic_launcher_foreground,
+            iconResId = android.R.drawable.ic_dialog_info,
             autoCancel = true,
             priority = NotificationCompat.PRIORITY_HIGH,
             vibrate = true,

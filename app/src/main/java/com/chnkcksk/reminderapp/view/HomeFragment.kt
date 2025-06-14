@@ -99,7 +99,6 @@ class HomeFragment : Fragment() {
         setupToolbar()
         setupDrawerMenu()
         setupButtons()
-        checkSession()
 
     }
 
@@ -335,19 +334,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    fun checkSession() {
-        val user = auth.currentUser
-        if (user != null) {
-            if (user.isEmailVerified) {
-                Toast.makeText(requireContext(), "Kullanici girdi", Toast.LENGTH_LONG).show()
-            } else {
-                Toast.makeText(requireContext(), "Kullanici girdi ama", Toast.LENGTH_LONG).show()
 
-            }
-        } else {
-            Toast.makeText(requireContext(), "Kullanici yok", Toast.LENGTH_LONG).show()
-        }
-    }
 
     private fun setupButtons() {
 

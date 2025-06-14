@@ -44,6 +44,12 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
     private val _selectedTime = MutableLiveData<String>()
     val selectedTime: LiveData<String> get() = _selectedTime
 
+    private val _reminderState = MutableLiveData<Boolean>()
+    val reminderState: LiveData<Boolean> get() = _reminderState
+
+    private val _setNotification = MutableLiveData<Boolean>()
+    val setNotification: LiveData<Boolean> get() = _setNotification
+
 
     private val currentUser = auth.currentUser
 
@@ -87,7 +93,9 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
         description: String,
         priority: String,
         date: String,
-        time: String
+        time: String,
+        isNotificationChecked: Boolean
+
     ) {
 
 
@@ -100,9 +108,11 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
             val updatedData = hashMapOf<String, Any>(
                 "title" to title,
                 "description" to description,
+                "lasttimestamp" to System.currentTimeMillis(),
                 "priority" to priority,
                 "date" to date,
                 "time" to time,
+                "reminder" to isNotificationChecked
             )
 
             try {
@@ -110,6 +120,11 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
                     .document(workspaceId).collection("reminders").document(reminderId)
                     .update(updatedData).await()
 
+
+                //kutucuk seciliyse bildirim ayarla
+                if (isNotificationChecked == true){
+                    _setNotification.value = true
+                }
 
 
                 _isLoading.value = false
@@ -154,6 +169,7 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
                     _priority.value = doc.getString("priority")
                     _selectedDate.value = doc.getString("date")
                     _selectedTime.value = doc.getString("time")
+                    _reminderState.value = doc.getBoolean("reminder")
 
                     _isLoading.value = false
                 }
