@@ -113,9 +113,9 @@ class LoginFragment : Fragment() {
             val email = binding.loginEmailET.text.toString()
             val password = binding.loginPasswordET.text.toString()
 
-            lifecycleScope.launch {
+
                 viewModel.login(email, password)
-            }
+
 
 
         }

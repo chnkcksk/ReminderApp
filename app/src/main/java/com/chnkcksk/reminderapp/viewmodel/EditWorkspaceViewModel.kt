@@ -53,7 +53,12 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     private val _viewSuccessDialog = MutableLiveData<Boolean>()
     val viewSuccessDialog: LiveData<Boolean> get() = _viewSuccessDialog
 
-    suspend fun fetchWorkspaceMemberNames(workspaceId: String) {
+    fun fetchWorkspaceMemberNames(workspaceId: String) {
+
+        viewModelScope.launch {
+
+
+
         _isLoading.value = true
 
         try {
@@ -68,7 +73,7 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             if (memberIds.isEmpty()) {
                 _memberNames.value = memberNamesList
                 _isLoading.value = false
-                return
+                return@launch
             }
 
             var fetchedCount = 0
@@ -104,11 +109,16 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             _toastMessage.value = "Could not load workspace members."
         }
 
-
+        }
     }
 
 
-    suspend fun quitWorkspace(workspaceId: String) {
+    fun quitWorkspace(workspaceId: String) {
+
+        viewModelScope.launch {
+
+
+
         val currentUser = auth.currentUser
 
         if (currentUser != null) {
@@ -148,10 +158,14 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             delay(1200)
             _toastMessage.value = "User not found!"
         }
+        }
     }
 
 
-    suspend fun getWorkspaceData(workspaceId: String) {
+    fun getWorkspaceData(workspaceId: String) {
+
+        viewModelScope.launch {
+
         val currentUser = auth.currentUser
 
         if (currentUser != null && workspaceId.isNotEmpty()) {
@@ -171,7 +185,7 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                 if (!members.contains(userId)) {
                     _toastMessage.value = "You do not have access to this area"
                     _navigateHome.value = true
-                    return
+                    return@launch
                 }
 
                 _isLoading.value = false
@@ -189,14 +203,19 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         } else {
             Log.d("Workspace", "User not logged in")
         }
+        }
     }
 
-    suspend fun deleteWorkspace(workspaceId: String) {
+     fun deleteWorkspace(workspaceId: String) {
+
+         viewModelScope.launch {
+
         val currentUser = auth.currentUser
 
         if (currentUser == null) {
-            return
             _toastMessage.value = "Error"
+            return@launch
+
         }
 
         _isLoading.value = true
@@ -219,22 +238,27 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             delay(1200)
             _toastMessage.value = "Workspace could not be deleted"
         }
-
+         }
 
     }
 
-    suspend fun editWorkspace(
+     fun editWorkspace(
         workspaceId: String,
         editedWorkspaceName: String,
         wT: String,
         eT: String,
         kickOthers: Boolean
     ) {
+
+         viewModelScope.launch {
+
+
         val currentUser = auth.currentUser
 
         if (currentUser == null) {
-            return
             _toastMessage.value = "Error"
+            return@launch
+
         }
 
         _isLoading.value = true
@@ -307,7 +331,7 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
 
 
 
-
+         }
 
     }
 

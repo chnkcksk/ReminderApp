@@ -9,7 +9,6 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.chnkcksk.reminderapp.R
@@ -74,9 +73,9 @@ class OtherWorkspaceFragment : Fragment() {
 
 
         //veriuleri cektigimiz fonksiyon
-        lifecycleScope.launch {
+
             viewModel.loadWorkspaceData(workspaceId)
-        }
+
 
 
         setupButtons()
@@ -101,9 +100,9 @@ class OtherWorkspaceFragment : Fragment() {
     }
 
     private fun setupOtherReminders() {
-        lifecycleScope.launch {
+
             viewModel.loadRemindersList(workspaceId)
-        }
+
 
 
         var owner = false
@@ -155,9 +154,9 @@ class OtherWorkspaceFragment : Fragment() {
         binding.swipeRefreshLayout.setOnRefreshListener {
             val currentTime = System.currentTimeMillis()
             if (currentTime - lastRefreshTime > REFRESH_COOLDOWN) {
-                lifecycleScope.launch {
+
                     viewModel.loadWorkspaceData(workspaceId)
-                }
+
 
                 Toast.makeText(requireContext(),"Workspace data refreshed",Toast.LENGTH_SHORT).show()
                 lastRefreshTime = currentTime

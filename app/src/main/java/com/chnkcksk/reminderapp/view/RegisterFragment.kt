@@ -123,9 +123,9 @@ class RegisterFragment : Fragment() {
             val email = binding.registerEmailET.text.toString()
             val password = binding.registerPasswordET.text.toString()
 
-            lifecycleScope.launch {
+
                 viewModel.register(name, email, password)
-            }
+
 
         }
     }

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
@@ -11,6 +12,11 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -18,22 +24,24 @@ class AddReminderOtherViewModel(application: Application) : AndroidViewModel(app
     private val auth: FirebaseAuth = Firebase.auth
     private val firestore = Firebase.firestore
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> get() = _isLoading
+    sealed class UiEvent{
+        object ReminderAdded: UiEvent()
+        object ShowLoading : UiEvent()
+        object HideLoading : UiEvent()
+        data class ShowToast(val message: String) : UiEvent()
+        object NavigateWorkspace : UiEvent()
+        data class WorkspaceInformations(
+            val workspaceName: String,
+            val workspaceType: String,
+        ) : UiEvent()
 
-    private val _toastMessage = MutableLiveData<String>()
-    val toastMessage: LiveData<String> get() = _toastMessage
+    }
 
-    private val _navigateWorkspace = MutableLiveData<Boolean>()
-    val navigateWorkspace: LiveData<Boolean> get() = _navigateWorkspace
+    private val _uiEvent = MutableSharedFlow<UiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
 
-    private val _workspaceName = MutableLiveData<String>()
-    val workspaceName: LiveData<String> get() = _workspaceName
 
-    private val _workspaceType = MutableLiveData<String>()
-    val workspaceType: LiveData<String> get() = _workspaceType
-
-    suspend fun addOtherReminder(
+    fun addOtherReminder(
         workspaceId: String,
         title: String,
         description: String,
@@ -41,82 +49,77 @@ class AddReminderOtherViewModel(application: Application) : AndroidViewModel(app
         date: String,
         time: String
     ) {
-        val currentUser = auth.currentUser
 
-        if (currentUser == null) {
-            _toastMessage.value = "Error"
-            return
-        }
+        viewModelScope.launch {
 
-        _isLoading.value = true
 
-        val reminder = hashMapOf(
-            "title" to title,
-            "description" to description,
-            "timestamp" to System.currentTimeMillis(),
-            "isCompleted" to false,
-            "priority" to priority,
-            "date" to date,
-            "time" to time
-        )
+            val currentUser = auth.currentUser
 
-        try {
-            // Firestore işlemini coroutine ile yapıyoruz
-            firestore.collection("workspaces")
-                .document(workspaceId)
-                .collection("reminders")
-                .add(reminder)
-                .await() // Coroutine ile bekleme
-
-            // Başarılı durumda
-            _isLoading.value = false
-            delay(1200) // 0.5 saniye bekle
-            _toastMessage.value = "Reminder added successfully"
-            delay(500) // 0.5 saniye bekle
-            _navigateWorkspace.value = true
-
-        } catch (e: Exception) {
-            // Hata durumunda
-            _isLoading.value = false
-            _toastMessage.value = "Reminder could not be added"
-        }
-    }
-
-    fun getDatas(workspaceId: String){
-
-        _isLoading.value = true
-
-        firestore.collection("workspaces")
-            .document(workspaceId)
-            .get()
-            .addOnSuccessListener { doc ->
-                _workspaceName.value = doc.getString("workspaceName") ?: ""
-                _workspaceType.value = doc.getString("workspaceType") ?: ""
-                _isLoading.value = false
-
-            }.addOnFailureListener {
-                _isLoading.value = false
-
+            if (currentUser == null) {
+                _uiEvent.emit(UiEvent.ShowToast("User login required"))
+                return@launch
             }
 
+            _uiEvent.emit(UiEvent.ShowLoading)
+
+            val reminder = hashMapOf(
+                "title" to title,
+                "description" to description,
+                "timestamp" to System.currentTimeMillis(),
+                "isCompleted" to false,
+                "priority" to priority,
+                "date" to date,
+                "time" to time
+            )
+
+            try {
+                // Firestore işlemini coroutine ile yapıyoruz
+                firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .collection("reminders")
+                    .add(reminder)
+                    .await() // Coroutine ile bekleme
+
+                _uiEvent.emit(UiEvent.ReminderAdded)
+
+
+            } catch (e: Exception) {
+                // Hata durumunda
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(UiEvent.ShowToast("Reminder could not be added"))
+            }
+
+        }
     }
 
+    fun getDatas(workspaceId: String) {
+
+        viewModelScope.launch {
 
 
+            _uiEvent.emit(UiEvent.ShowLoading)
+
+            try {
+                val doc = firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .get()
+                    .await()
+
+                _uiEvent.emit(UiEvent.WorkspaceInformations(
+                    workspaceName = doc.getString("workspaceName") ?: "",
+                    workspaceType = doc.getString("workspaceType") ?: "",
+                ))
+
+               _uiEvent.emit(UiEvent.HideLoading)
+
+            }catch (e:Exception){
+                _uiEvent.emit(UiEvent.ShowToast("${e.message}"))
+                _uiEvent.emit(UiEvent.HideLoading)
+            }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+        }
+    }
 
 
 }

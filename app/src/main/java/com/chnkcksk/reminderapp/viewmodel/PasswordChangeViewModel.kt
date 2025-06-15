@@ -7,6 +7,7 @@ import android.widget.ImageButton
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.chnkcksk.reminderapp.R
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
@@ -14,6 +15,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class PasswordChangeViewModel(application: Application) : AndroidViewModel(application) {
@@ -36,29 +38,33 @@ class PasswordChangeViewModel(application: Application) : AndroidViewModel(appli
     private val _viewSuccessAnim = MutableLiveData<Boolean>()
     val viewSuccessAnim: LiveData<Boolean> get() = _viewSuccessAnim
 
-    suspend fun reAuthenticateAndChangePassword(oldPassw: String, newPassw: String, newPasswAgain: String) {
+    fun reAuthenticateAndChangePassword(oldPassw: String, newPassw: String, newPasswAgain: String) {
+
+        viewModelScope.launch {
+
+
 
         val currentUser = auth.currentUser
 
         if (currentUser == null) {
             _toastMessage.value = "User not found!"
-            return
+            return@launch
         }
 
         if (oldPassw.isEmpty() || newPassw.isEmpty() || newPasswAgain.isEmpty()) {
             _toastMessage.value = "Please fill blank fields!"
-            return
+            return@launch
         }
 
 
         if (!newPassw.equals(newPasswAgain)) {
             _toastMessage.value = "Passwords are not the same!"
-            return
+            return@launch
         }
 
         if (newPassw.equals(oldPassw)){
             _toastMessage.value = "The old password cannot be the same as the new password!"
-            return
+            return@launch
         }
 
         val userId = currentUser.uid
@@ -66,7 +72,7 @@ class PasswordChangeViewModel(application: Application) : AndroidViewModel(appli
 
         if (email == null) {
             _toastMessage.value = "Email not found!"
-            return
+            return@launch
         }
 
         _isLoading.value = true
@@ -99,27 +105,30 @@ class PasswordChangeViewModel(application: Application) : AndroidViewModel(appli
 
 
 
-//        currentUser.reauthenticate(credential)
-//            .addOnCompleteListener { authTask ->
-//                if (authTask.isSuccessful){
-//                    currentUser.updatePassword(newPassw)
-//                        .addOnCompleteListener { updateTask ->
-//                            if (updateTask.isSuccessful){
-//                                _isLoading.value = false
-//                                _toastMessage.value = "Password changed successfully"
-//                                _viewSuccessAnim.value = true
-//                                _clearFields.value = true
-//                            }else{
-//                                _isLoading.value = false
-//                                _toastMessage.value = "Failed to change password: ${updateTask.exception?.message}"
-//                            }
-//                        }
-//                }else{
-//                    _isLoading.value = false
-//                    _toastMessage.value = "Re-authentication failed: ${authTask.exception?.message}"
-//                }
-//            }
+        /*
+        currentUser.reauthenticate(credential)
+            .addOnCompleteListener { authTask ->
+                if (authTask.isSuccessful){
+                    currentUser.updatePassword(newPassw)
+                        .addOnCompleteListener { updateTask ->
+                            if (updateTask.isSuccessful){
+                                _isLoading.value = false
+                                _toastMessage.value = "Password changed successfully"
+                                _viewSuccessAnim.value = true
+                                _clearFields.value = true
+                            }else{
+                                _isLoading.value = false
+                                _toastMessage.value = "Failed to change password: ${updateTask.exception?.message}"
+                            }
+                        }
+                }else{
+                    _isLoading.value = false
+                    _toastMessage.value = "Re-authentication failed: ${authTask.exception?.message}"
+                }
+            }
 
+         */
+        }
 
     }
 

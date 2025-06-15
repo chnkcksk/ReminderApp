@@ -37,6 +37,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -87,12 +88,41 @@ class AddReminderFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupObserves()
 
         setupDateAndTimePicker()
-        setupLiveDatas()
         setupButtons()
         setupSpinner()
     }
+
+    private fun setupObserves() {
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.uiEvent.collect{ event ->
+
+                when(event){
+                    is AddReminderViewModel.UiEvent.ShowLoading ->loadingManager.showLoading(requireContext())
+                    is AddReminderViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
+                    is AddReminderViewModel.UiEvent.ShowToast ->
+                        Toast.makeText(requireContext(), event.message, Toast.LENGTH_SHORT).show()
+                    is AddReminderViewModel.UiEvent.NavigateHome -> goBack()
+                    is AddReminderViewModel.UiEvent.SetNotification -> requestNotification()
+                    is AddReminderViewModel.UiEvent.ReminderAdded -> {
+                        loadingManager.dismissLoading {
+                            Toast.makeText(requireContext(), "Reminder saved", Toast.LENGTH_LONG).show()
+                            //Buraya delay eklemek istiyorum
+                            goBack()
+                        }
+                    }
+
+                }
+
+            }
+        }
+
+    }
+
+
 
     override fun onResume() {
         super.onResume()
@@ -181,35 +211,6 @@ class AddReminderFragment : Fragment() {
                 }
                 .show()
         }
-    }
-
-    private fun setupLiveDatas() {
-        viewModel.toastMessage.observe(viewLifecycleOwner) { message ->
-            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-        }
-
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            if (isLoading == true) {
-                loadingManager.showLoading(requireContext())
-            } else {
-                loadingManager.dismissLoading()
-            }
-        }
-
-        viewModel.navigateHome.observe(viewLifecycleOwner) { navigate ->
-            if (navigate) {
-                goBack()
-            }
-        }
-
-        viewModel.setNotification.observe(viewLifecycleOwner) { setNotification ->
-            if (setNotification == true) {
-                requestNotification()
-
-
-            }
-        }
-
     }
 
     private fun calculateDelayInSeconds(): Long {
@@ -413,7 +414,7 @@ class AddReminderFragment : Fragment() {
                     .show()
             } else {
 
-                lifecycleScope.launch {
+
 
                     viewModel.addReminder(
                         title,
@@ -423,7 +424,7 @@ class AddReminderFragment : Fragment() {
                         selectedTime,
                         isNotificationChecked
                     )
-                }
+
 
 
             }

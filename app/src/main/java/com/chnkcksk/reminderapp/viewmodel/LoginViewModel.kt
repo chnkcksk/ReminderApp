@@ -155,11 +155,14 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         editText.setSelection(editText.text.length)
     }
 
-    suspend fun login(email: String, password: String) {
+    fun login(email: String, password: String) {
+
+        viewModelScope.launch {
+
         if (email.isEmpty() || password.isEmpty()) {
             _isLoading.value = false
             _toastMessage.value = "Please enter email and password!"
-            return
+            return@launch
         }
 
         try {
@@ -189,6 +192,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             _toastMessage.value = e.localizedMessage ?: "Login failed"
         }
         //finally { }
+        }
     }
 
 }

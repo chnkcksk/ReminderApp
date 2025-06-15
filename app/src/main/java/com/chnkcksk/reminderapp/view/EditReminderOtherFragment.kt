@@ -71,10 +71,10 @@ class EditReminderOtherFragment : Fragment() {
 
 
 
-        lifecycleScope.launch {
+
             viewModel.loadReminderData(workspaceId, reminderId)
             viewModel.loadWorkspaceData(workspaceId)
-        }
+
 
 
         setupSpinner()
@@ -263,7 +263,7 @@ class EditReminderOtherFragment : Fragment() {
                 val date = binding.editReminderODate.text.toString()
                 val time = binding.editReminderOTime.text.toString()
 
-                lifecycleScope.launch {
+
                     viewModel.editReminderData(
                         workspaceId,
                         reminderId,
@@ -273,7 +273,7 @@ class EditReminderOtherFragment : Fragment() {
                         date,
                         time
                     )
-                }
+
 
 
             }
@@ -295,9 +295,9 @@ class EditReminderOtherFragment : Fragment() {
                     .setTitle("Are You Sure?")
                     .setMessage("Are you sure you want to delete the reminder?")
                     .setPositiveButton("Yes") { _, _ ->
-                        lifecycleScope.launch {
+
                             viewModel.deleteReminder(workspaceId, reminderId)
-                        }
+
 
                     }.setNegativeButton("No", null)
                     .setCancelable(false)

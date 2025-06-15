@@ -18,10 +18,12 @@ import com.chnkcksk.reminderapp.databinding.FragmentAddReminderBinding
 import com.chnkcksk.reminderapp.databinding.FragmentAddReminderOtherBinding
 import com.chnkcksk.reminderapp.util.LoadingManager
 import com.chnkcksk.reminderapp.viewmodel.AddReminderOtherViewModel
+import com.chnkcksk.reminderapp.viewmodel.EditReminderViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -65,36 +67,50 @@ class AddReminderOtherFragment : Fragment() {
 
         viewModel.getDatas(workspaceId)
         setupDateAndTimePicker()
-        setupLiveDatas()
+        setupObserves()
         setupButtons()
         setupSpinner()
     }
 
-    private fun setupLiveDatas() {
-        viewModel.toastMessage.observe(viewLifecycleOwner) { message ->
-            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-        }
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            if (isLoading == true) {
-                loadingManager.showLoading(requireContext())
-            } else {
-                loadingManager.dismissLoading()
+    private fun setupObserves() {
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.uiEvent.collect { event ->
+
+
+                when (event) {
+                    is AddReminderOtherViewModel.UiEvent.ShowLoading -> loadingManager.showLoading(
+                        requireContext()
+                    )
+
+                    is AddReminderOtherViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
+                    is AddReminderOtherViewModel.UiEvent.ShowToast -> Toast.makeText(
+                        requireContext(),
+                        event.message,
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    is AddReminderOtherViewModel.UiEvent.WorkspaceInformations -> {
+                        binding.workspaceNameOtherTV.text = event.workspaceName
+                        binding.workspaceTypeOtherTV.text = event.workspaceType
+                    }
+
+                    is AddReminderOtherViewModel.UiEvent.NavigateWorkspace -> goBack()
+                    is AddReminderOtherViewModel.UiEvent.ReminderAdded -> {
+                        loadingManager.dismissLoading {
+                            Toast.makeText(
+                                requireContext(),
+                                "Reminder added",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            goBack()
+                        }
+                    }
+                }
+
             }
         }
-        viewModel.navigateWorkspace.observe(viewLifecycleOwner) { navigate ->
-            if (navigate) {
-                goBack()
-            }
-        }
-        viewModel.workspaceName.observe(viewLifecycleOwner) { workspaceName ->
-            binding.workspaceNameOtherTV.text = workspaceName
-        }
-        viewModel.workspaceType.observe(viewLifecycleOwner) { workspaceType ->
-            binding.workspaceTypeOtherTV.text = workspaceType
-
-        }
-
     }
+
 
     private fun setupDateAndTimePicker() {
         // Başlangıç olarak bugünün tarihi ve saat 09:00
@@ -163,18 +179,15 @@ class AddReminderOtherFragment : Fragment() {
                     .show()
             } else {
 
-                lifecycleScope.launch {
 
-                    viewModel.addOtherReminder(
-                        workspaceId,
-                        title,
-                        description,
-                        priority,
-                        selectedDate,
-                        selectedTime
-                    )
-
-                }
+                viewModel.addOtherReminder(
+                    workspaceId,
+                    title,
+                    description,
+                    priority,
+                    selectedDate,
+                    selectedTime
+                )
 
 
             }

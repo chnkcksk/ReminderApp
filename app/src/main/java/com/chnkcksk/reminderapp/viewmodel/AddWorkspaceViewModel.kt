@@ -48,7 +48,7 @@ class AddWorkspaceViewModel(application: Application) : AndroidViewModel(applica
     val viewSuccessDialog: LiveData<Boolean> get() = _viewSuccessDialog
 
 
-        //lifecyclescope.launch{}
+    //lifecyclescope.launch{}
 
     suspend fun createWorkspace(
         workspaceName: String,
@@ -87,21 +87,20 @@ class AddWorkspaceViewModel(application: Application) : AndroidViewModel(applica
                 // Başarılı durumda
                 _workspaceId.value = documentReference.id
                 _joinCode.value = joinCode
-                _isLoading.value = false
-                delay(1200)
+                //_isLoading.value = false
                 _viewSuccessDialog.value = true
                 delay(2000)
-                _toastMessage.value = "Workspace created successfully!"
-                delay(500)
                 _buildDialog.value = true
                 _navigateNewWorkspace.value = true
 
             } catch (e: Exception) {
                 // Hata durumunda
-                _isLoading.value = false
+                //_isLoading.value = false
                 delay(1200)
                 _toastMessage.value = "Error creating workspace: ${e.localizedMessage}"
 
+            }finally {
+                _isLoading.value = false
             }
         } else {
             _isLoading.value = false
@@ -120,71 +119,71 @@ class AddWorkspaceViewModel(application: Application) : AndroidViewModel(applica
             _toastMessage.value = "Error"
             return
         }
-            val userId = currentUser.uid
-            _isLoading.value = true
+        val userId = currentUser.uid
+        _isLoading.value = true
 
-            try {
-                // Workspace'i join code ile bul
-                val querySnapshot = firestore.collection("workspaces")
-                    .whereEqualTo("joinCode", joinCode)
-                    .get()
-                    .await()
+        try {
+            // Workspace'i join code ile bul
+            val querySnapshot = firestore.collection("workspaces")
+                .whereEqualTo("joinCode", joinCode)
+                .get()
+                .await()
 
-                if (!querySnapshot.isEmpty) {
-                    val document = querySnapshot.documents[0]
-                    val workspaceId = document.id
-                    val workspaceType = document.getString("workspaceType") ?: ""
+            if (!querySnapshot.isEmpty) {
+                val document = querySnapshot.documents[0]
+                val workspaceId = document.id
+                val workspaceType = document.getString("workspaceType") ?: ""
 
-                    // Personal workspace kontrolü
-                    if (workspaceType == "Personal") {
-                        _isLoading.value = false
-                        delay(1200)
-                        _toastMessage.value = "You cannot join a personal workspace"
-
-                        return
-                    }
-
-                    _workspaceId.value = document.id
-                    val members = document.get("members") as? List<String> ?: listOf()
-
-                    // Kullanıcı zaten üye mi kontrolü
-                    if (members.contains(userId)) {
-
-                        _isLoading.value = false
-                        delay(1200)
-                        _toastMessage.value = "You are already a member of this workspace"
-                        return
-                    }
-
-                    // Üye listesini güncelle
-                    val updatedMembers = members + userId
-
-                    firestore.collection("workspaces")
-                        .document(workspaceId)
-                        .update("members", updatedMembers)
-                        .await()
-
-                    // Başarılı durumda
+                // Personal workspace kontrolü
+                if (workspaceType == "Personal") {
                     _isLoading.value = false
                     delay(1200)
-                    _viewSuccessDialog.value = true
-                    delay(2000)
-                    _joinCode.value = joinCode
-                    _navigateNewWorkspace2.value = true
+                    _toastMessage.value = "You cannot join a personal workspace"
 
-                } else {
-
-                    _isLoading.value = false
-                    delay(1200)
-                    _toastMessage.value = "No workspace found with this join code"
+                    return
                 }
 
-            } catch (e: Exception) {
+                _workspaceId.value = document.id
+                val members = document.get("members") as? List<String> ?: listOf()
+
+                // Kullanıcı zaten üye mi kontrolü
+                if (members.contains(userId)) {
+
+                    _isLoading.value = false
+                    delay(1200)
+                    _toastMessage.value = "You are already a member of this workspace"
+                    return
+                }
+
+                // Üye listesini güncelle
+                val updatedMembers = members + userId
+
+                firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .update("members", updatedMembers)
+                    .await()
+
+                // Başarılı durumda
                 _isLoading.value = false
                 delay(1200)
-                _toastMessage.value = "Error joining workspace: ${e.localizedMessage}"
+                _viewSuccessDialog.value = true
+                delay(2000)
+                _joinCode.value = joinCode
+                _navigateNewWorkspace2.value = true
 
+            } else {
+
+                _isLoading.value = false
+                delay(1200)
+                _toastMessage.value = "No workspace found with this join code"
             }
+
+        } catch (e: Exception) {
+            _isLoading.value = false
+            delay(1200)
+            _toastMessage.value = "Error joining workspace: ${e.localizedMessage}"
+
+        }
 
 
 

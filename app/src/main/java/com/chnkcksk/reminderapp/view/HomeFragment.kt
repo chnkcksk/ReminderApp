@@ -142,9 +142,7 @@ class HomeFragment : Fragment() {
 
     private fun setupReminders() {
 
-        lifecycleScope.launch {
-            viewModel.loadRemindersList()
-        }
+        viewModel.loadRemindersList()
 
 
         val adapter = ReminderAdapter(
@@ -213,9 +211,8 @@ class HomeFragment : Fragment() {
     // HomeFragment.kt - setupDrawerMenu() fonksiyonunda debugging ekleyin
 
     private fun setupDrawerMenu() {
-        lifecycleScope.launch {
-            viewModel.loadWorkspaces()
-        }
+
+        viewModel.loadWorkspaces()
 
 
         // Header setup
@@ -308,7 +305,7 @@ class HomeFragment : Fragment() {
 
         // Logout button click listener
         contentBinding.btnLogout.setOnClickListener {
-            AlertDialog.Builder(requireContext(),R.style.MyDialogTheme)
+            AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
                 .setTitle("Are You Sure?")
                 .setMessage("Are you sure you want to log out?")
                 .setPositiveButton("Yes") { _, _ ->
@@ -325,15 +322,16 @@ class HomeFragment : Fragment() {
                     setOnShowListener {
                         // Butonların metin rengini değiştir
                         getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
-                            ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                            ContextCompat.getColor(requireContext(), R.color.primary_text_color)
+                        )
                         getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
-                            ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                            ContextCompat.getColor(requireContext(), R.color.secondary_color)
+                        )
                     }
                 }
                 .show()
         }
     }
-
 
 
     private fun setupButtons() {

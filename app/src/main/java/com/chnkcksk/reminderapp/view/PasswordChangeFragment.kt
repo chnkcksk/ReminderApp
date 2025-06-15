@@ -122,9 +122,9 @@ class PasswordChangeFragment : Fragment() {
                 val newPassw = newPasswET.text.toString()
                 val newPasswAgain = newPasswAgainET.text.toString()
 
-                lifecycleScope.launch {
+
                     viewModel.reAuthenticateAndChangePassword(oldPassw, newPassw, newPasswAgain)
-                }
+
 
             }
 

@@ -27,7 +27,7 @@ class LoadingManager private constructor() {
 
     companion object {
         private const val DEFAULT_TIMEOUT = 10000L // 10 saniye
-        private const val MIN_SHOW_TIME = 1200L // Minimum gösterim süresi (ms)
+        private const val MIN_SHOW_TIME = 1000L // Minimum gösterim süresi (ms)
         private const val DISPLAY_DELAY = 200L // 200ms sonra göster
         private var instance: LoadingManager? = null
 
@@ -40,7 +40,11 @@ class LoadingManager private constructor() {
     }
 
     // Yükleme dialogunu göster
-    fun showLoading(context: Context, message: String = "Loading..", timeout: Long = DEFAULT_TIMEOUT) {
+    fun showLoading(
+        context: Context,
+        message: String = "Loading..",
+        timeout: Long = DEFAULT_TIMEOUT
+    ) {
         // İstek zamanını kaydet
         isLoadingRequested = true
         requestStartTime = System.currentTimeMillis()
@@ -62,14 +66,19 @@ class LoadingManager private constructor() {
                     dismissLoading()
                     // Zaman aşımında toast mesajı göster
                     if (context is Activity && !context.isFinishing) {
-                        Toast.makeText(context, "This operation has timed out", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "This operation has timed out", Toast.LENGTH_SHORT)
+                            .show()
                     }
                 }, timeout)
             }
         }, DISPLAY_DELAY)
     }
 
-    fun showLoadingQuick(context: Context, message: String = "Loading..", timeout: Long = DEFAULT_TIMEOUT) {
+    fun showLoadingQuick(
+        context: Context,
+        message: String = "Loading..",
+        timeout: Long = DEFAULT_TIMEOUT
+    ) {
         // İstek zamanını kaydet
         isLoadingRequested = true
         requestStartTime = System.currentTimeMillis()
@@ -91,7 +100,8 @@ class LoadingManager private constructor() {
                     dismissLoading()
                     // Zaman aşımında toast mesajı göster
                     if (context is Activity && !context.isFinishing) {
-                        Toast.makeText(context, "This operation has timed out", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "This operation has timed out", Toast.LENGTH_SHORT)
+                            .show()
                     }
                 }, timeout)
             }
@@ -107,7 +117,8 @@ class LoadingManager private constructor() {
         loadingDialog?.setCancelable(false)
 
         // Lottie animasyonunu düzelt
-        val lottieAnimationView = loadingDialog?.findViewById<com.airbnb.lottie.LottieAnimationView>(R.id.loading_anim)
+        val lottieAnimationView =
+            loadingDialog?.findViewById<com.airbnb.lottie.LottieAnimationView>(R.id.loading_anim)
         lottieAnimationView?.let {
             // Loop'u true yap
             it.repeatCount = com.airbnb.lottie.LottieDrawable.INFINITE
@@ -130,7 +141,7 @@ class LoadingManager private constructor() {
     }
 
     // Yükleme dialogunu kapat
-    fun dismissLoading() {
+    fun dismissLoading(callback: (() -> Unit)? = null) {
         isLoadingRequested = false
         displayHandler.removeCallbacksAndMessages(null)
         timeoutHandler.removeCallbacksAndMessages(null)
@@ -140,12 +151,11 @@ class LoadingManager private constructor() {
             val remainingMinTime = Math.max(0, MIN_SHOW_TIME - displayTime)
 
             try {
-                // Eğer dialog hâlâ pencereye bağlıysa animasyonu başlat
                 if (loadingDialog?.window?.decorView?.windowToken != null) {
                     loadingDialog?.window?.decorView?.startAnimation(fadeOutAnimation)
                 }
             } catch (e: Exception) {
-                e.printStackTrace() // Opsiyonel: loglamak için
+                e.printStackTrace()
             }
 
             timeoutHandler.postDelayed({
@@ -157,8 +167,11 @@ class LoadingManager private constructor() {
                     e.printStackTrace()
                 } finally {
                     loadingDialog = null
+                    callback?.invoke() // Callback'i çağır
                 }
             }, remainingMinTime)
+        } else {
+            callback?.invoke() // Dialog zaten kapalıysa callback'i hemen çağır
         }
     }
 

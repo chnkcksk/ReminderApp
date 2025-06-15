@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.chnkcksk.reminderapp.model.Reminder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -11,82 +12,87 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class EditReminderViewModel(application: Application) : AndroidViewModel(application) {
 
+    //UI State Data Class + StateFlow/LiveData
+
+
+    data class UiState(
+        val reminderDeleted:Boolean = false,
+        val reminderNotDeleted:Boolean = false,
+        val reminderEdited:Boolean = false,
+        val reminderNotEdited:Boolean = false,
+        val isLoading: Boolean = false,
+        val toastMessage: String? = null,
+        val title: String = "",
+        val description: String = "",
+        val priority: String = "None",
+        val selectedDate: String = "",
+        val selectedTime: String = "",
+        val reminderState: Boolean = false,
+        val navigateHome: Boolean = false,
+        val setNotification: Boolean = false,
+        val error: String? = null
+    )
+
     private val auth: FirebaseAuth = Firebase.auth
     private val firestore: FirebaseFirestore = Firebase.firestore
-
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isloading: LiveData<Boolean> get() = _isLoading
-
-    private val _toastMessage = MutableLiveData<String>()
-    val toastMessage: LiveData<String> get() = _toastMessage
-
-    private val _title = MutableLiveData<String>()
-    val title: LiveData<String> get() = _title
-
-    private val _description = MutableLiveData<String>()
-    val description: LiveData<String> get() = _description
-
-    private val _navigateHome = MutableLiveData<Boolean>()
-    val navigateHome: LiveData<Boolean> get() = _navigateHome
-
-    //priority,date,time
-
-    private val _priority = MutableLiveData<String>()
-    val priority: LiveData<String> get() = _priority
-
-    private val _selectedDate = MutableLiveData<String>()
-    val selectedDate: LiveData<String> get() = _selectedDate
-
-    private val _selectedTime = MutableLiveData<String>()
-    val selectedTime: LiveData<String> get() = _selectedTime
-
-    private val _reminderState = MutableLiveData<Boolean>()
-    val reminderState: LiveData<Boolean> get() = _reminderState
-
-    private val _setNotification = MutableLiveData<Boolean>()
-    val setNotification: LiveData<Boolean> get() = _setNotification
-
-
     private val currentUser = auth.currentUser
 
-    suspend fun deleteReminder(workspaceId: String?, reminderId: String?) {
-        if (currentUser != null && workspaceId != null && reminderId != null) {
-
-            val userId = currentUser.uid
-
-            _isLoading.value = true
-
-            try {
-                firestore.collection("Users").document(userId).collection("workspaces")
-                    .document(workspaceId).collection("reminders").document(reminderId).delete()
-                    .await()
-
-                _isLoading.value = false
-                delay(1200)
-                _toastMessage.value = "Reminder deleted"
-                delay(500)
-                _navigateHome.value = true
+    private val _uiState = MutableStateFlow(UiState())
+    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
 
-            } catch (e: Exception) {
-                _isLoading.value = false
-                delay(1200)
-                _toastMessage.value = "Reminder could not be deleted"
+    private fun updateUiState(update: UiState.() -> UiState) {
+        _uiState.value = _uiState.value.update()
+    }
+
+    fun deleteReminder(workspaceId: String?, reminderId: String?) {
+
+        viewModelScope.launch {
+
+
+            if (currentUser != null && workspaceId != null && reminderId != null) {
+
+                val userId = currentUser.uid
+
+                updateUiState { copy(isLoading = true) }
+
+                try {
+                    firestore.collection("Users").document(userId).collection("workspaces")
+                        .document(workspaceId).collection("reminders").document(reminderId).delete()
+                        .await()
+
+                    updateUiState {
+                        copy(
+                            reminderDeleted = true
+                        )
+                    }
+
+
+                } catch (e: Exception) {
+
+                    updateUiState {
+                        copy(
+                            reminderNotDeleted = true,
+                            error = e.message
+                        )
+                    }
+
+                }
+
+
             }
-
-
-        } else {
-            _isLoading.value = false
-            delay(1200)
-            _toastMessage.value = "Error!"
         }
     }
 
-    suspend fun editReminderData(
+    fun editReminderData(
         workspaceId: String?,
         reminderId: String?,
         title: String,
@@ -98,95 +104,129 @@ class EditReminderViewModel(application: Application) : AndroidViewModel(applica
 
     ) {
 
-
-        if (currentUser != null && workspaceId != null && reminderId != null) {
-
-            val userId = currentUser.uid
-
-            _isLoading.value = true
-
-            val updatedData = hashMapOf<String, Any>(
-                "title" to title,
-                "description" to description,
-                "lasttimestamp" to System.currentTimeMillis(),
-                "priority" to priority,
-                "date" to date,
-                "time" to time,
-                "reminder" to isNotificationChecked
-            )
-
-            try {
-                firestore.collection("Users").document(userId).collection("workspaces")
-                    .document(workspaceId).collection("reminders").document(reminderId)
-                    .update(updatedData).await()
+        viewModelScope.launch {
 
 
-                //kutucuk seciliyse bildirim ayarla
-                if (isNotificationChecked == true){
-                    _setNotification.value = true
+            if (currentUser != null && workspaceId != null && reminderId != null) {
+
+                val userId = currentUser.uid
+
+                updateUiState {
+                    copy(isLoading = true)
                 }
 
 
-                _isLoading.value = false
-                delay(1200)
-                _toastMessage.value = "Reminder updated!"
-                delay(500)
-                _navigateHome.value = true
-            } catch (e: Exception) {
-                _isLoading.value = false
-                delay(1200)
-                _toastMessage.value = "Reminder could not be updated! Please try again."
+                val updatedData = hashMapOf<String, Any>(
+                    "title" to title,
+                    "description" to description,
+                    "lasttimestamp" to System.currentTimeMillis(),
+                    "priority" to priority,
+                    "date" to date,
+                    "time" to time,
+                    "reminder" to isNotificationChecked
+                )
 
-            }
-
-
-        } else {
-            _isLoading.value = false
-            delay(1200)
-            _toastMessage.value = "Error."
-        }
-
-    }
-
-    suspend fun loadReminderData(workspaceId: String?, reminderId: String?) {
+                try {
+                    firestore.collection("Users").document(userId).collection("workspaces")
+                        .document(workspaceId).collection("reminders").document(reminderId)
+                        .update(updatedData).await()
 
 
-        if (currentUser != null && workspaceId != null && reminderId != null) {
-            val userId = currentUser.uid
+                    //kutucuk seciliyse bildirim ayarla
+                    if (isNotificationChecked == true) {
+                        updateUiState { copy(setNotification = true) }
+                    }
 
-            _isLoading.value = true
+                    updateUiState {
+                        copy(
+                            reminderEdited = true
+                        )
+                    }
 
-            try {
-                val doc = firestore.collection("Users").document(userId).collection("workspaces")
-                    .document(workspaceId).collection("reminders").document(reminderId).get()
-                    .await()
+                } catch (e: Exception) {
+                    updateUiState {
+                        copy(
+                            reminderNotEdited = true,
+                            error = e.message
+                        )
+                    }
 
-                if (doc != null && doc.exists()) {
-
-                    //priority,date,time
-                    _title.value = doc.getString("title")
-                    _description.value = doc.getString("description")
-                    _priority.value = doc.getString("priority")
-                    _selectedDate.value = doc.getString("date")
-                    _selectedTime.value = doc.getString("time")
-                    _reminderState.value = doc.getBoolean("reminder")
-
-                    _isLoading.value = false
                 }
 
-            } catch (e: Exception) {
-                _isLoading.value = false
-                delay(1200)
-                _toastMessage.value = "Error: $e"
+
             }
-
-
-        } else {
-            _isLoading.value = false
-            delay(1200)
-            _toastMessage.value = "Error!"
         }
-
     }
 
+    fun loadReminderData(workspaceId: String?, reminderId: String?) {
+
+        viewModelScope.launch {
+
+
+            if (currentUser != null && workspaceId != null && reminderId != null) {
+                val userId = currentUser.uid
+
+                updateUiState {
+                    copy(isLoading = true)
+                }
+
+                try {
+                    val doc =
+                        firestore.collection("Users").document(userId).collection("workspaces")
+                            .document(workspaceId).collection("reminders").document(reminderId)
+                            .get().await()
+
+                    if (doc != null && doc.exists()) {
+
+                        updateUiState {
+                            copy(
+                                isLoading = false,
+                                title = doc.getString("title") ?: "",
+                                description = doc.getString("description") ?: "",
+                                priority = doc.getString("priority") ?: "",
+                                selectedDate = doc.getString("date") ?: "",
+                                selectedTime = doc.getString("time") ?: "",
+                                reminderState = doc.getBoolean("reminder") ?: false
+
+                            )
+                        }
+
+                    }
+
+                } catch (e: Exception) {
+                    updateUiState {
+                        copy(
+                            isLoading = false,
+                            toastMessage = "Error: ${e.message}",
+                            error = e.message
+                        )
+                    }
+                }
+
+
+            } else {
+                updateUiState {
+                    copy(
+                        isLoading = false,
+                        toastMessage = "Error!",
+                        error = "Invalid parameters"
+                    )
+                }
+            }
+        }
+    }
+
+
+    // Event'leri temizle
+    fun clearToastMessage() {
+        updateUiState { copy(toastMessage = null) }
+    }
+
+    fun clearNavigateHome() {
+        updateUiState { copy(navigateHome = false) }
+    }
+
+    fun clearSetNotification() {
+        updateUiState { copy(setNotification = false) }
+    }
 }

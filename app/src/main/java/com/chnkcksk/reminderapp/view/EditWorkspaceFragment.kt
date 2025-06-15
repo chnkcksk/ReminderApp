@@ -18,7 +18,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentEditReminderBinding
@@ -79,10 +78,10 @@ class EditWorkspaceFragment : Fragment() {
         binding.editWorkspaceButton.isVisible= false
         binding.linearLayout11.isVisible = false
 
-        lifecycleScope.launch {
+
             viewModel.fetchWorkspaceMemberNames(workspaceId!!)
             viewModel.getWorkspaceData(workspaceId!!)
-        }
+
 
 
 
@@ -152,9 +151,9 @@ class EditWorkspaceFragment : Fragment() {
                 .setTitle("Leave")
                 .setMessage("Are you sure you want to leave the workspace?")
                 .setPositiveButton("Yes") { _, _ ->
-                    lifecycleScope.launch {
+
                         viewModel.quitWorkspace(workspaceId!!)
-                    }
+
 
                     val action =
                         EditWorkspaceFragmentDirections.actionEditWorkspaceFragmentToHomeFragment()
@@ -358,7 +357,7 @@ class EditWorkspaceFragment : Fragment() {
                     .setMessage("")
                     .setPositiveButton("Yes") { _, _ ->
                         kickOthers = true
-                        lifecycleScope.launch {
+
                             viewModel.editWorkspace(
                                 workspaceId!!,
                                 editedWorkspaceName,
@@ -366,7 +365,7 @@ class EditWorkspaceFragment : Fragment() {
                                 eT,
                                 kickOthers
                             )
-                        }
+
 
                     }.setNegativeButton("No", null)
                     .setCancelable(false)
@@ -383,9 +382,9 @@ class EditWorkspaceFragment : Fragment() {
                     .show()
 
             } else {
-                lifecycleScope.launch {
+
                     viewModel.editWorkspace(workspaceId!!, editedWorkspaceName, wT, eT, kickOthers)
-                }
+
 
             }
 
@@ -398,9 +397,9 @@ class EditWorkspaceFragment : Fragment() {
             .setTitle("Delete")
             .setMessage("Are you sure you want to delete the workspace?")
             .setPositiveButton("Yes") { _, _ ->
-                lifecycleScope.launch {
+
                     viewModel.deleteWorkspace(workspaceId!!)
-                }
+
 
                 val action =
                     EditWorkspaceFragmentDirections.actionEditWorkspaceFragmentToHomeFragment()

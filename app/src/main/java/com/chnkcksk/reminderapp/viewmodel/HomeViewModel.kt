@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.chnkcksk.reminderapp.model.DrawerMenuItem
 import com.chnkcksk.reminderapp.model.Reminder
 import com.chnkcksk.reminderapp.permissions.NotificationPermissionManager
@@ -12,6 +13,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -55,68 +57,31 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     }
 
-    suspend fun loadRemindersList() {
-        val currentUser = auth.currentUser
 
-        _isLoading.value = true
+    fun loadRemindersList() {
 
-        if (currentUser == null) {
-            _toastMessage.value = "Error"
-            return
-        }
+        viewModelScope.launch {
 
-        try {
 
-            val documents = firestore.collection("Users")
-                .document(currentUser.uid)
-                .collection("workspaces")
-                .document("personalWorkspace")
-                .collection("reminders")
-                .get()
-                .await()
+            val currentUser = auth.currentUser
 
-            val reminderList = ArrayList<Reminder>()
+            _isLoading.value = true
 
-            documents.forEach { document ->
-                val reminder = Reminder(
-                    id = document.id,
-                    title = document.getString("title") ?: "",
-                    description = document.getString("description") ?: "",
-                    isCompleted = document.getBoolean("isCompleted") ?: false,
-                    timestamp = document.get("timestamp").toString() ?: "",
-                    priority = document.getString("priority") ?: "",
-                    date = document.getString("date") ?: "",
-                    time = document.getString("time") ?: "",
-                    reminder = document.getBoolean("reminder") ?: false
-                )
-                reminderList.add(reminder)
-            }
-            reminderList.sortByDescending { reminder ->
-                try {
-                    reminder.timestamp.toLong()
-                } catch (e: Exception) {
-                    0L // hata durumunda varsayılan değer
-                }
+            if (currentUser == null) {
+                _toastMessage.value = "Error"
+                return@launch
             }
 
-            _reminderList.value = reminderList
-            _isLoading.value = false
+            try {
 
-        } catch (e: Exception) {
+                val documents = firestore.collection("Users")
+                    .document(currentUser.uid)
+                    .collection("workspaces")
+                    .document("personalWorkspace")
+                    .collection("reminders")
+                    .get()
+                    .await()
 
-            _isLoading.value = false
-            _toastMessage.value = e.toString()
-
-        }
-
-        /*
-        firestore.collection("Users")
-            .document(currentUser.uid)
-            .collection("workspaces")
-            .document("personalWorkspace")
-            .collection("reminders")
-            .get()
-            .addOnSuccessListener { documents ->
                 val reminderList = ArrayList<Reminder>()
 
                 documents.forEach { document ->
@@ -144,65 +109,112 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 _reminderList.value = reminderList
                 _isLoading.value = false
 
-            }.addOnFailureListener { e ->
+            } catch (e: Exception) {
+
                 _isLoading.value = false
-                _toastMessage.value = e.toString()
+                _toastMessage.value = "Failed to load reminders: $e"
+                println("Failed to load reminders: $e")
+
             }
 
-         */
+            /*
+            firestore.collection("Users")
+                .document(currentUser.uid)
+                .collection("workspaces")
+                .document("personalWorkspace")
+                .collection("reminders")
+                .get()
+                .addOnSuccessListener { documents ->
+                    val reminderList = ArrayList<Reminder>()
 
+                    documents.forEach { document ->
+                        val reminder = Reminder(
+                            id = document.id,
+                            title = document.getString("title") ?: "",
+                            description = document.getString("description") ?: "",
+                            isCompleted = document.getBoolean("isCompleted") ?: false,
+                            timestamp = document.get("timestamp").toString() ?: "",
+                            priority = document.getString("priority") ?: "",
+                            date = document.getString("date") ?: "",
+                            time = document.getString("time") ?: "",
+                            reminder = document.getBoolean("reminder") ?: false
+                        )
+                        reminderList.add(reminder)
+                    }
+                    reminderList.sortByDescending { reminder ->
+                        try {
+                            reminder.timestamp.toLong()
+                        } catch (e: Exception) {
+                            0L // hata durumunda varsayılan değer
+                        }
+                    }
+
+                    _reminderList.value = reminderList
+                    _isLoading.value = false
+
+                }.addOnFailureListener { e ->
+                    _isLoading.value = false
+                    _toastMessage.value = e.toString()
+                }
+
+             */
+        }
 
     }
 
     // HomeViewModel.kt - loadWorkspaces() fonksiyonuna debug ekleyin
 
-    suspend fun loadWorkspaces() {
-        val currentUser = auth.currentUser
-        android.util.Log.d("HomeViewModel", "loadWorkspaces called")
 
-        if (currentUser == null) {
-            _toastMessage.value = "Error"
-            return
-        }
+    fun loadWorkspaces() {
 
-        val userId = currentUser.uid
+        viewModelScope.launch {
 
-        _isLoading.value = true
 
-        try {
-            val documents = firestore.collection("workspaces")
-                .whereArrayContains("members", userId)
-                .get()
-                .await()
+            val currentUser = auth.currentUser
+            android.util.Log.d("HomeViewModel", "loadWorkspaces called")
 
-            _isLoading.value = false
-
-            if (!documents.isEmpty) {
-                val workspaceList = ArrayList<DrawerMenuItem>()
-                documents.forEach { document ->
-
-                    val workspace = DrawerMenuItem(
-                        id = document.id,
-                        joinCode = document.getString("joinCode") ?: "",
-                        title = document.getString("workspaceName") ?: "",
-                        workspaceType = document.getString("workspaceType") ?: ""
-                    )
-                    workspaceList.add(workspace)
-                }
-                _workspaceList.value = workspaceList
-            } else {
-                _workspaceList.value = ArrayList()
+            if (currentUser == null) {
+                _toastMessage.value = "Error"
+                return@launch
             }
 
-        }catch (e:Exception){
-            _isLoading.value = false
-            delay(1200)
-            _toastMessage.value =
-                "Workspace'leri alırken hata oluştu: ${e.localizedMessage}"
-            _workspaceList.value = ArrayList()
+            val userId = currentUser.uid
+
+            _isLoading.value = true
+
+            try {
+                val documents = firestore.collection("workspaces")
+                    .whereArrayContains("members", userId)
+                    .get()
+                    .await()
+
+                _isLoading.value = false
+
+                if (!documents.isEmpty) {
+                    val workspaceList = ArrayList<DrawerMenuItem>()
+                    documents.forEach { document ->
+
+                        val workspace = DrawerMenuItem(
+                            id = document.id,
+                            joinCode = document.getString("joinCode") ?: "",
+                            title = document.getString("workspaceName") ?: "",
+                            workspaceType = document.getString("workspaceType") ?: ""
+                        )
+                        workspaceList.add(workspace)
+                    }
+                    _workspaceList.value = workspaceList
+                } else {
+                    _workspaceList.value = ArrayList()
+                }
+
+            } catch (e: Exception) {
+                _isLoading.value = false
+                delay(1200)
+                _toastMessage.value =
+                    "Error retrieving workspaces: ${e.localizedMessage}"
+                _workspaceList.value = ArrayList()
+            }
         }
-
-
 
     }
 

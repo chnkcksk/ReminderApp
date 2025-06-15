@@ -2,6 +2,7 @@ package com.chnkcksk.reminderapp.view
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Context
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -35,6 +36,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -57,7 +59,6 @@ class EditReminderFragment : Fragment() {
     val permissionManager = NotificationPermissionManager.getInstance()
 
     private val viewModel: EditReminderViewModel by viewModels()
-
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,17 +84,111 @@ class EditReminderFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        lifecycleScope.launch {
-            viewModel.loadReminderData(workspaceId, reminderId)
-        }
+
+        viewModel.loadReminderData(workspaceId, reminderId)
 
 
 
+        setupObserves()
 
         setupSpinner()
         setupDateAndTimePicker()
-        setupLiveDatas()
         setupButtons()
+    }
+
+    private fun setupObserves() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.uiState.collect { state ->
+                updateUI(state)
+            }
+        }
+    }
+
+    private fun updateUI(state: EditReminderViewModel.UiState) {
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            // Loading
+            if (state.isLoading) {
+                loadingManager.showLoading(requireContext())
+            } else {
+                loadingManager.dismissLoading()
+            }
+
+            if (state.reminderDeleted == true) {
+                loadingManager.dismissLoading {
+                    Toast.makeText(requireContext(), "Reminder deleted", Toast.LENGTH_LONG).show()
+                    goBack()
+                }
+
+            }
+
+            if (state.reminderNotDeleted == true) {
+                loadingManager.dismissLoading {
+                    Toast.makeText(
+                        requireContext(),
+                        "Reminder could not be deleted: ${state.error}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+
+
+            }
+
+            if (state.reminderEdited == true) {
+                loadingManager.dismissLoading {
+                    Toast.makeText(requireContext(), "Reminder updated!", Toast.LENGTH_LONG).show()
+                    goBack()
+                }
+            }
+
+            if (state.reminderNotEdited == true) {
+                loadingManager.dismissLoading {
+                    Toast.makeText(
+                        requireContext(),
+                        "Reminder could not be updated! Please try again: ${state.error}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+
+
+            state.toastMessage?.let { message ->
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                viewModel.clearToastMessage()
+            }
+
+            // Toast gösterildikten sonra navigasyonu yap
+            if (state.navigateHome) {
+                goBack()
+                viewModel.clearNavigateHome()
+            }
+
+            // Notification
+            if (state.setNotification) {
+                requestNotification()
+                viewModel.clearSetNotification() // Event'i temizle
+            }
+
+
+            // Form data
+            binding.editTitleET.setText(state.title)
+            binding.editDescriptionET.setText(state.description)
+            binding.editReminderDate.text = state.selectedDate
+            binding.editReminderTime.text = state.selectedTime
+            binding.editReminderCheckBox.isChecked = state.reminderState
+
+            // Priority spinner
+            val selectedIndex = when (state.priority) {
+                "None" -> 0
+                "Low" -> 1
+                "Medium" -> 2
+                "High" -> 3
+                else -> 0
+            }
+            binding.prioritySpinner.setSelection(selectedIndex)
+        }
+
+
     }
 
     private fun checkPermission() {
@@ -178,105 +273,6 @@ class EditReminderFragment : Fragment() {
 
     }
 
-    private fun setupLiveDatas() {
-
-        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-
-        viewModel.title.observe(viewLifecycleOwner) { title ->
-            binding.editTitleET.setText(title)
-        }
-        viewModel.description.observe(viewLifecycleOwner) { desc ->
-            binding.editDescriptionET.setText(desc)
-        }
-        viewModel.isloading.observe(viewLifecycleOwner) { isLoading ->
-            if (isLoading == true) {
-                loadingManager.showLoading(requireContext())
-            } else {
-                loadingManager.dismissLoading()
-            }
-        }
-        viewModel.toastMessage.observe(viewLifecycleOwner) { message ->
-            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-        }
-        viewModel.navigateHome.observe(viewLifecycleOwner) { navigate ->
-            if (navigate == true) {
-                goBack()
-            }
-        }
-
-        viewModel.setNotification.observe(viewLifecycleOwner){ setNotification ->
-            if (setNotification== true){
-                requestNotification()
-            }
-        }
-
-        viewModel.reminderState.observe(viewLifecycleOwner){ reminderState ->
-            if (reminderState == true){
-                binding.editReminderCheckBox.isChecked = true
-            }
-
-        }
-
-        viewModel.priority.observe(viewLifecycleOwner) {
-            val selectedIndex = when (it) {
-                "None" -> 0
-                "Low" -> 1
-                "Medium" -> 2
-                "High" -> 3
-                else -> 0 // default
-            }
-
-            binding.prioritySpinner.setSelection(selectedIndex)
-        }
-        viewModel.selectedDate.observe(viewLifecycleOwner) { selectedDateString ->
-            try {
-                val date = dateFormat.parse(selectedDateString) // String -> Date
-                val calendar = Calendar.getInstance().apply {
-                    time = date!!
-                }
-
-                val year = calendar.get(Calendar.YEAR)
-                val month = calendar.get(Calendar.MONTH)
-                val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-                // TextView'a yaz
-                binding.editReminderDate.text = selectedDateString
-
-//                // İstersen burada DatePickerDialog açabilirsin:
-//                DatePickerDialog(requireContext(), { _, y, m, d ->
-//                    // kullanıcı yeni tarih seçtiğinde
-//                }, year, month, day).show()
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        viewModel.selectedTime.observe(viewLifecycleOwner) { selectedTimeString ->
-            try {
-                var time = timeFormat.parse(selectedTimeString)
-                val calendar = Calendar.getInstance().apply {
-                    time = time!!
-                }
-
-                val hour = calendar.get(Calendar.HOUR_OF_DAY)
-                val minute = calendar.get(Calendar.MINUTE)
-
-                // TextView'a yaz
-                binding.editReminderTime.text = selectedTimeString
-
-//                // İstersen burada TimePickerDialog açabilirsin:
-//                TimePickerDialog(requireContext(), { _, h, m ->
-//                    // kullanıcı yeni saat seçtiğinde
-//                }, hour, minute, true).show()
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-
-    }
 
     private fun calculateDelayInSeconds(): Long {
         val dateStr = binding.editReminderDate.text.toString()
@@ -377,6 +373,7 @@ class EditReminderFragment : Fragment() {
     }
 
     private fun cancelEditAndGoBack() {
+        /*
         AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
             .setTitle("Are you sure?")
             .setMessage("Are you sure you want to cancel the edit and leave?")
@@ -404,6 +401,15 @@ class EditReminderFragment : Fragment() {
                 }
             }
             .show()
+
+         */
+
+        showAlertDialog(
+            "Are you sure?",
+            "Are you sure you want to cancel the edit and leave?",
+            { goBack() }
+        )
+
     }
 
     private fun setupButtons() {
@@ -425,7 +431,8 @@ class EditReminderFragment : Fragment() {
                 val time = binding.editReminderTime.text.toString()
                 val reminderState = binding.editReminderCheckBox.isChecked
 
-                val hasPermission = permissionManager.isNotificationPermissionGranted(requireContext())
+                val hasPermission =
+                    permissionManager.isNotificationPermissionGranted(requireContext())
 
                 if (hasPermission == false && reminderState == true) {
                     binding.editReminderCheckBox.isChecked = false
@@ -453,36 +460,48 @@ class EditReminderFragment : Fragment() {
                 }
 
                 if (title.isEmpty() || desc.isEmpty()) {
-                    Toast.makeText(requireContext(), "Please fill in the blanks!", Toast.LENGTH_LONG)
+                    Toast.makeText(
+                        requireContext(),
+                        "Please fill in the blanks!",
+                        Toast.LENGTH_LONG
+                    )
                         .show()
                     return@setOnClickListener
                 }
 
-                lifecycleScope.launch {
-                    viewModel.editReminderData(
-                        workspaceId,
-                        reminderId,
-                        title,
-                        desc,
-                        priority,
-                        date,
-                        time,
-                        reminderState
-                    )
-                }
+
+                viewModel.editReminderData(
+                    workspaceId,
+                    reminderId,
+                    title,
+                    desc,
+                    priority,
+                    date,
+                    time,
+                    reminderState
+                )
 
 
             }
 
             deleteReminderButton.setOnClickListener {
 
+                showAlertDialog(
+                    "Are You Sure?",
+                    "Are you sure you want to delete the reminder?",
+                    {
+                        viewModel.deleteReminder(workspaceId, reminderId)
+                    }
+                )
+
+                /*
                 AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
                     .setTitle("Are You Sure?")
                     .setMessage("Are you sure you want to delete the reminder?")
                     .setPositiveButton("Yes") { _, _ ->
-                        lifecycleScope.launch {
-                            viewModel.deleteReminder(workspaceId, reminderId)
-                        }
+
+                        viewModel.deleteReminder(workspaceId, reminderId)
+
 
                     }.setNegativeButton("No", null)
                     .setCancelable(false)
@@ -506,6 +525,8 @@ class EditReminderFragment : Fragment() {
                     }
                     .show()
 
+                 */
+
 
             }
 
@@ -524,6 +545,30 @@ class EditReminderFragment : Fragment() {
 
     }
 
+    fun showAlertDialog(
+        title: String,
+        message: String,
+        positiveAction: () -> Unit
+    ) {
+        AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("Yes") { _, _ -> positiveAction() }
+            .setNegativeButton("No", null)
+            .setCancelable(false)
+            .create()
+            .apply {
+                setOnShowListener {
+                    getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(
+                        ContextCompat.getColor(context, R.color.primary_text_color)
+                    )
+                    getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+                        ContextCompat.getColor(context, R.color.secondary_color)
+                    )
+                }
+            }
+            .show()
+    }
 
     private fun goBack() {
         val action = EditReminderFragmentDirections.actionEditReminderFragmentToHomeFragment()
@@ -533,5 +578,6 @@ class EditReminderFragment : Fragment() {
     override fun onDestroy() {
         super.onDestroy()
         _binding = null
+        loadingManager.onDestroy()
     }
 }
