@@ -5,12 +5,15 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.chnkcksk.reminderapp.viewmodel.AddReminderOtherViewModel.UiEvent
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -19,38 +22,30 @@ class EditReminderOtherViewModel(application: Application) : AndroidViewModel(ap
     private val auth: FirebaseAuth = Firebase.auth
     private val firestore: FirebaseFirestore = Firebase.firestore
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isloading: LiveData<Boolean> get() = _isLoading
+    sealed class UiEvent {
+        object ReminderUpdated : UiEvent()
+        object ReminderDeleted : UiEvent()
+        object ShowLoading : UiEvent()
+        object HideLoading : UiEvent()
+        data class ShowToast(val message: String) : UiEvent()
+        object NavigateHome : UiEvent()
+        data class ReminderInformations(
+            val title: String,
+            val description: String,
+            val priority: String,
+            val selectedDate: String,
+            val selectedTime: String
+        ) : UiEvent()
 
-    private val _toastMessage = MutableLiveData<String>()
-    val toastMessage: LiveData<String> get() = _toastMessage
+        data class WorkspaceInformations(
+            val workspaceName: String,
+            val workspaceType: String
+        ) : UiEvent()
+    }
 
-    private val _title = MutableLiveData<String>()
-    val title: LiveData<String> get() = _title
-
-    private val _description = MutableLiveData<String>()
-    val description: LiveData<String> get() = _description
-
-    private val _navigateHome = MutableLiveData<Boolean>()
-    val navigateHome: LiveData<Boolean> get() = _navigateHome
-
-    //priority,date,time
-
-    private val _priority = MutableLiveData<String>()
-    val priority: LiveData<String> get() = _priority
-
-    private val _selectedDate = MutableLiveData<String>()
-    val selectedDate: LiveData<String> get() = _selectedDate
-
-    private val _selectedTime = MutableLiveData<String>()
-    val selectedTime: LiveData<String> get() = _selectedTime
-
-    private val _workspaceName = MutableLiveData<String>()
-    val workspaceName: LiveData<String> get() = _workspaceName
-
-    private val _workspaceType = MutableLiveData<String>()
-    val workspaceType: LiveData<String> get() = _workspaceType
-
+    // UI'a gönderilecek eventleri tutmak için kullanılan akış (SharedFlow) - birden fazla kez tüketilebilir.
+    private val _uiEvent = MutableSharedFlow<UiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow() // Dışarıya sadece okunabilir versiyonu veriliyor.
 
     private val currentUser = auth.currentUser
 
@@ -59,40 +54,33 @@ class EditReminderOtherViewModel(application: Application) : AndroidViewModel(ap
         viewModelScope.launch {
 
 
-            if (currentUser != null && workspaceId != null && reminderId != null) {
+            if (currentUser == null || workspaceId == null || reminderId == null) {
+                _uiEvent.emit(UiEvent.ShowToast("Error!"))
+                return@launch
+            }
 
-                _isLoading.value = true
+            _uiEvent.emit(UiEvent.ShowLoading)
 
-                try {
+            try {
 
-                    firestore.collection("workspaces")
-                        .document(workspaceId)
-                        .collection("reminders")
-                        .document(reminderId)
-                        .delete()
-                        .await()
-
-                    _isLoading.value = false
-                    delay(1200)
-                    _toastMessage.value = "Reminder deleted"
-                    delay(500)
-                    _navigateHome.value = true
+                firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .collection("reminders")
+                    .document(reminderId)
+                    .delete()
+                    .await()
 
 
-                } catch (e: Exception) {
-                    _isLoading.value = false
-                    delay(1200)
-                    _toastMessage.value = "Reminder could not be deleted"
-
-                }
+                _uiEvent.emit(UiEvent.ReminderDeleted)
 
 
-            } else {
-                _isLoading.value = false
-                delay(1200)
-                _toastMessage.value = "Error!"
+            } catch (e: Exception) {
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(UiEvent.ShowToast("Reminder could not be deleted"))
 
             }
+
+
         }
     }
 
@@ -101,32 +89,35 @@ class EditReminderOtherViewModel(application: Application) : AndroidViewModel(ap
         viewModelScope.launch {
 
 
-            if (currentUser == null) {
+            if (currentUser == null || workspaceId == null) {
+
                 return@launch
             }
 
-            _isLoading.value = true
+            _uiEvent.emit(UiEvent.ShowLoading)
+
+
+            try {
+                val doc = firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .get()
+                    .await()
 
 
 
-            if (workspaceId != null) {
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(
+                    UiEvent.WorkspaceInformations(
+                        workspaceName = doc.getString("workspaceName") ?: "",
+                        workspaceType = doc.getString("workspaceType") ?: "",
+                    )
+                )
 
-                try {
-                    val doc = firestore.collection("workspaces")
-                        .document(workspaceId)
-                        .get()
-                        .await()
-
-                    _isLoading.value = false
-                    _workspaceName.value = doc.getString("workspaceName") ?: ""
-                    _workspaceType.value = doc.getString("workspaceType") ?: ""
-
-                } catch (e: Exception) {
-                    _isLoading.value = false
-                }
-
-
+            } catch (e: Exception) {
+                _uiEvent.emit(UiEvent.HideLoading)
             }
+
+
         }
 
 
@@ -145,45 +136,38 @@ class EditReminderOtherViewModel(application: Application) : AndroidViewModel(ap
         viewModelScope.launch {
 
 
-            _isLoading.value = true
+            if (currentUser == null || workspaceId == null || reminderId == null) {
+                _uiEvent.emit(UiEvent.ShowToast("Error"))
+                return@launch
+            }
 
-            if (currentUser != null && workspaceId != null && reminderId != null) {
+            _uiEvent.emit(UiEvent.ShowLoading)
 
-                val userId = currentUser.uid
+            val userId = currentUser.uid
 
-                val updatedData = hashMapOf<String, Any>(
-                    "title" to title,
-                    "description" to description,
-                    "priority" to priority,
-                    "date" to date,
-                    "time" to time,
-                )
-                try {
-                    firestore
-                        .collection("workspaces").document(workspaceId)
-                        .collection("reminders").document(reminderId)
-                        .update(updatedData)
-                        .await()
+            val updatedData = hashMapOf<String, Any>(
+                "title" to title,
+                "description" to description,
+                "priority" to priority,
+                "date" to date,
+                "time" to time,
+            )
+            try {
+                firestore
+                    .collection("workspaces").document(workspaceId)
+                    .collection("reminders").document(reminderId)
+                    .update(updatedData)
+                    .await()
 
-                    _isLoading.value = false
-                    delay(1200)
-                    _toastMessage.value = "Reminder updated!"
-                    delay(500)
-                    _navigateHome.value = true
-                } catch (e: Exception) {
-                    _isLoading.value = false
-                    delay(1200)
-                    _toastMessage.value = "Reminder could not be updated! Please try again."
+                _uiEvent.emit(UiEvent.ReminderUpdated)
 
-                }
-
-
-            } else {
-                _isLoading.value = false
-                delay(1200)
-                _toastMessage.value = "Error."
+            } catch (e: Exception) {
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(UiEvent.ShowToast("Reminder could not be updated! Please try again."))
 
             }
+
+
         }
     }
 
@@ -192,44 +176,43 @@ class EditReminderOtherViewModel(application: Application) : AndroidViewModel(ap
         viewModelScope.launch {
 
 
-            _isLoading.value = true
+            if (currentUser == null || workspaceId == null || reminderId == null) {
+                _uiEvent.emit(UiEvent.ShowToast("Error"))
+                return@launch
+            }
 
-            if (currentUser != null && workspaceId != null && reminderId != null) {
+            _uiEvent.emit(UiEvent.ShowLoading)
 
-                try {
-                    val doc = firestore.collection("workspaces")
-                        .document(workspaceId)
-                        .collection("reminders")
-                        .document(reminderId)
-                        .get()
-                        .await()
 
-                    if (doc != null && doc.exists()) {
+            try {
+                val doc = firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .collection("reminders")
+                    .document(reminderId)
+                    .get()
+                    .await()
 
-                        //priority,date,time
-                        _title.value = doc.getString("title")
-                        _description.value = doc.getString("description")
-                        _priority.value = doc.getString("priority")
-                        _selectedDate.value = doc.getString("date")
-                        _selectedTime.value = doc.getString("time")
+                if (doc != null && doc.exists()) {
 
-                        _isLoading.value = false
-                    }
-
-                } catch (e: Exception) {
-                    _isLoading.value = false
-                    delay(1200)
-                    _toastMessage.value = "Error: $e"
-
+                    _uiEvent.emit(
+                        UiEvent.ReminderInformations(
+                            title = doc.getString("title") ?: "",
+                            description = doc.getString("description") ?: "",
+                            priority = doc.getString("priority") ?: "",
+                            selectedDate = doc.getString("date") ?: "",
+                            selectedTime = doc.getString("time") ?: ""
+                        )
+                    )
+                    _uiEvent.emit(UiEvent.HideLoading)
                 }
 
-
-            } else {
-                _isLoading.value = false
-                delay(1200)
-                _toastMessage.value = "Error!"
+            } catch (e: Exception) {
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(UiEvent.ShowToast("Error: $e"))
 
             }
+
+
         }
     }
 

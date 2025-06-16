@@ -12,16 +12,14 @@ import android.view.WindowManager
 import com.airbnb.lottie.LottieAnimationView
 import com.chnkcksk.reminderapp.R
 
-class SuccessDialog  {
+class SuccessDialog {
 
-
-     fun showSuccessDialog(context: Context){
+    fun showSuccessDialog(context: Context, onComplete: (() -> Unit)? = null) {
         val dialog = Dialog(context)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         dialog.setCancelable(false)
         dialog.setContentView(R.layout.success_dialog)
 
-        // Dialog penceresi ayarları
         val window = dialog.window
         window?.setLayout(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -29,7 +27,6 @@ class SuccessDialog  {
         )
         window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
-        // Animasyon bittikten sonra otomatik kapanması için
         val lottieView = dialog.findViewById<LottieAnimationView>(R.id.success_animation)
         lottieView.addAnimatorListener(object : Animator.AnimatorListener {
             override fun onAnimationStart(animation: Animator) {}
@@ -37,17 +34,13 @@ class SuccessDialog  {
             override fun onAnimationRepeat(animation: Animator) {}
 
             override fun onAnimationEnd(animation: Animator) {
-                // Animasyon bittikten sonra 500ms bekleyip kapat
                 Handler(Looper.getMainLooper()).postDelayed({
                     dialog.dismiss()
-                    //goBack() // İşlem tamamlandığında önceki ekrana dön
-                }, 300) // 300ms bekleme süresi - isteğe göre ayarlayabilirsiniz
+                    onComplete?.invoke() // Animasyon + dialog kapandıktan sonra işlem
+                }, 300)
             }
         })
 
-
-
         dialog.show()
     }
-
 }

@@ -57,49 +57,36 @@ class PasswordChangeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
 
-
-        setupLiveDatas()
+        setupObserves()
         setupButtons()
     }
 
-    private fun setupLiveDatas() {
+    private fun setupObserves() {
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.uiEvent.collect { event ->
 
-        viewModel.viewSuccessAnim.observe(viewLifecycleOwner){ viewSuccessAnim ->
-            if (viewSuccessAnim == true){
-                successDialog.showSuccessDialog(requireContext())
-            }
-
-        }
-
-        viewModel.toastMessage.observe(viewLifecycleOwner) { message ->
-            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-        }
-
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            if (isLoading) {
-                loadingManager.showLoading(requireContext())
-            } else {
-                loadingManager.dismissLoading()
-            }
-        }
-        viewModel.navigateHome.observe(viewLifecycleOwner) { isNavigate ->
-            if (isNavigate) {
-                goBack()
-            }
-
-        }
-
-        viewModel.clearFields.observe(viewLifecycleOwner) { clearFields ->
-            if (clearFields == true) {
-                binding.apply {
-                    oldPasswET.text.clear()
-                    newPasswET.text.clear()
-                    newPasswAgainET.text.clear()
+                when(event){
+                    is PasswordChangeViewModel.UiEvent.ShowLoading -> loadingManager.showLoading(requireContext())
+                    is PasswordChangeViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
+                    is PasswordChangeViewModel.UiEvent.ShowToast -> Toast.makeText(requireContext(), event.message, Toast.LENGTH_LONG).show()
+                    is PasswordChangeViewModel.UiEvent.NavigateHome -> goBack()
+                    is PasswordChangeViewModel.UiEvent.PasswordChanged ->
+                        loadingManager.dismissLoading {
+                            successDialog.showSuccessDialog(requireContext()){
+                                binding.apply {
+                                    oldPasswET.text.clear()
+                                    newPasswET.text.clear()
+                                    newPasswAgainET.text.clear()
+                                }
+                            }
+                        }
                 }
+
             }
         }
-
     }
+
+
 
     private fun setupButtons() {
 
@@ -123,7 +110,7 @@ class PasswordChangeFragment : Fragment() {
                 val newPasswAgain = newPasswAgainET.text.toString()
 
 
-                    viewModel.reAuthenticateAndChangePassword(oldPassw, newPassw, newPasswAgain)
+                viewModel.reAuthenticateAndChangePassword(oldPassw, newPassw, newPasswAgain)
 
 
             }

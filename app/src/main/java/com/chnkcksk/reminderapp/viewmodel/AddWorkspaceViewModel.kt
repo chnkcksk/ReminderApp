@@ -12,6 +12,8 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -20,32 +22,32 @@ class AddWorkspaceViewModel(application: Application) : AndroidViewModel(applica
     private val auth: FirebaseAuth = Firebase.auth
     private val firestore = Firebase.firestore
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> get() = _isLoading
+    sealed class UiEvent {
+        object WorkspaceCreated : UiEvent()
+        object WorkspaceJoined : UiEvent()
 
-    private val _toastMessage = MutableLiveData<String>()
-    val toastMessage: LiveData<String> get() = _toastMessage
+        object ShowLoading : UiEvent()
+        object HideLoading : UiEvent()
+        data class ShowToast(val message: String) : UiEvent()
+        data class WorkspaceInformation(
+            val joinCode : String,
+            val workspaceId: String
+        ):UiEvent()
 
-    private val _navigateHome = MutableLiveData<Boolean>()
-    val navigateHome: LiveData<Boolean> get() = _navigateHome
+    }
 
-    private val _buildDialog = MutableLiveData<Boolean>()
-    val buildDialog: LiveData<Boolean> get() = _buildDialog
+    private val _uiEvent = MutableSharedFlow<UiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
 
-    private val _joinCode = MutableLiveData<String>()
-    val joinCode: LiveData<String> get() = _joinCode
 
-    private val _workspaceId = MutableLiveData<String>()
-    val workspaceId: LiveData<String> get() = _workspaceId
-
-    private val _navigateNewWorkspace = MutableLiveData<Boolean>()
-    val navigateNewWorkspace: LiveData<Boolean> get() = _navigateNewWorkspace
-
-    private val _navigateNewWorkspace2 = MutableLiveData<Boolean>()
-    val navigateNewWorkspace2: LiveData<Boolean> get() = _navigateNewWorkspace2
-
-    private val _viewSuccessDialog = MutableLiveData<Boolean>()
-    val viewSuccessDialog: LiveData<Boolean> get() = _viewSuccessDialog
+//    private val _buildDialog = MutableLiveData<Boolean>()
+//    val buildDialog: LiveData<Boolean> get() = _buildDialog
+//
+//    private val _navigateNewWorkspace = MutableLiveData<Boolean>()
+//    val navigateNewWorkspace: LiveData<Boolean> get() = _navigateNewWorkspace
+//
+//    private val _navigateNewWorkspace2 = MutableLiveData<Boolean>()
+//    val navigateNewWorkspace2: LiveData<Boolean> get() = _navigateNewWorkspace2
 
 
     //lifecyclescope.launch{}
@@ -59,53 +61,52 @@ class AddWorkspaceViewModel(application: Application) : AndroidViewModel(applica
         val currentUser = auth.currentUser
 
         if (workspaceName.isEmpty() && editableType.isEmpty() && workspaceType.isEmpty()) {
-            _toastMessage.value = "Please fill empty fields"
+            _uiEvent.emit(UiEvent.ShowToast("Please fill empty fields"))
             return
         }
 
-        _isLoading.value = true
 
-        if (currentUser != null) {
-            val userId = currentUser.uid
-            val joinCode = generateJoinCode()
 
-            val workspace = hashMapOf(
-                "workspaceName" to workspaceName,
-                "editableType" to editableType,
-                "workspaceType" to workspaceType,
-                "ownerId" to userId,
-                "members" to listOf(userId),
-                "joinCode" to joinCode
-            )
+        if (currentUser == null) {
+            _uiEvent.emit(UiEvent.ShowToast("User not found!"))
+            return
+        }
 
-            try {
-                // Firestore işlemini coroutine ile yapıyoruz
-                val documentReference = firestore.collection("workspaces")
-                    .add(workspace)
-                    .await()
+        _uiEvent.emit(UiEvent.ShowLoading)
 
-                // Başarılı durumda
-                _workspaceId.value = documentReference.id
-                _joinCode.value = joinCode
-                //_isLoading.value = false
-                _viewSuccessDialog.value = true
-                delay(2000)
-                _buildDialog.value = true
-                _navigateNewWorkspace.value = true
+        val userId = currentUser.uid
+        val joinCode = generateJoinCode()
 
-            } catch (e: Exception) {
-                // Hata durumunda
-                //_isLoading.value = false
-                delay(1200)
-                _toastMessage.value = "Error creating workspace: ${e.localizedMessage}"
+        val workspace = hashMapOf(
+            "workspaceName" to workspaceName,
+            "editableType" to editableType,
+            "workspaceType" to workspaceType,
+            "ownerId" to userId,
+            "members" to listOf(userId),
+            "joinCode" to joinCode
+        )
 
-            }finally {
-                _isLoading.value = false
-            }
-        } else {
-            _isLoading.value = false
-            delay(1200)
-            _toastMessage.value = "User not found!"
+        try {
+            // Firestore işlemini coroutine ile yapıyoruz
+            val documentReference = firestore.collection("workspaces")
+                .add(workspace)
+                .await()
+
+            _uiEvent.emit(UiEvent.WorkspaceInformation(
+                workspaceId = documentReference.id,
+                joinCode = joinCode
+            ))
+
+            // Başarılı durumda
+
+
+            _uiEvent.emit(UiEvent.WorkspaceCreated)
+
+        } catch (e: Exception) {
+            // Hata durumunda
+            _uiEvent.emit(UiEvent.HideLoading)
+            _uiEvent.emit(UiEvent.ShowToast("Error creating workspace: ${e.localizedMessage}"))
+
         }
 
 
@@ -116,11 +117,12 @@ class AddWorkspaceViewModel(application: Application) : AndroidViewModel(applica
         val currentUser = auth.currentUser
 
         if (currentUser == null) {
-            _toastMessage.value = "Error"
+            _uiEvent.emit(UiEvent.ShowToast("Error"))
             return
         }
         val userId = currentUser.uid
-        _isLoading.value = true
+
+        _uiEvent.emit(UiEvent.ShowLoading)
 
         try {
             // Workspace'i join code ile bul
@@ -136,22 +138,25 @@ class AddWorkspaceViewModel(application: Application) : AndroidViewModel(applica
 
                 // Personal workspace kontrolü
                 if (workspaceType == "Personal") {
-                    _isLoading.value = false
-                    delay(1200)
-                    _toastMessage.value = "You cannot join a personal workspace"
+                    _uiEvent.emit(UiEvent.HideLoading)
+                    _uiEvent.emit(UiEvent.ShowToast("You cannot join a personal workspace"))
 
                     return
                 }
 
-                _workspaceId.value = document.id
+                _uiEvent.emit(UiEvent.WorkspaceInformation(
+                    workspaceId = document.id,
+                    joinCode = ""
+                ))
+
+                //_workspaceId.value = document.id
                 val members = document.get("members") as? List<String> ?: listOf()
 
                 // Kullanıcı zaten üye mi kontrolü
                 if (members.contains(userId)) {
 
-                    _isLoading.value = false
-                    delay(1200)
-                    _toastMessage.value = "You are already a member of this workspace"
+                    _uiEvent.emit(UiEvent.HideLoading)
+                    _uiEvent.emit(UiEvent.ShowToast("You are already a member of this workspace"))
                     return
                 }
 
@@ -163,28 +168,24 @@ class AddWorkspaceViewModel(application: Application) : AndroidViewModel(applica
                     .update("members", updatedMembers)
                     .await()
 
+
+                _uiEvent.emit(UiEvent.WorkspaceJoined)
+
                 // Başarılı durumda
-                _isLoading.value = false
-                delay(1200)
-                _viewSuccessDialog.value = true
-                delay(2000)
-                _joinCode.value = joinCode
-                _navigateNewWorkspace2.value = true
+                //_joinCode.value = joinCode
 
             } else {
 
-                _isLoading.value = false
-                delay(1200)
-                _toastMessage.value = "No workspace found with this join code"
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(UiEvent.ShowToast("No workspace found with this join code"))
+
             }
 
         } catch (e: Exception) {
-            _isLoading.value = false
-            delay(1200)
-            _toastMessage.value = "Error joining workspace: ${e.localizedMessage}"
+            _uiEvent.emit(UiEvent.HideLoading)
+            _uiEvent.emit(UiEvent.ShowToast("Error joining workspace: ${e.localizedMessage}"))
 
         }
-
 
 
     }

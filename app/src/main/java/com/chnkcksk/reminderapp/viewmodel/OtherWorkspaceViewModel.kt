@@ -16,6 +16,8 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -24,26 +26,25 @@ class OtherWorkspaceViewModel(application: Application) : AndroidViewModel(appli
     private val auth: FirebaseAuth = Firebase.auth
     private val firestore = Firebase.firestore
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> get() = _isLoading
+    sealed class UiEvent {
+        object ShowLoading : UiEvent()
+        object HideLoading : UiEvent()
+        data class ShowToast(val message: String) : UiEvent()
+        object NavigateHome : UiEvent()
 
-    private val _toastMessage = MutableLiveData<String>()
-    val toastMessage: LiveData<String> get() = _toastMessage
+        data class WorkspaceInformations(
+            val workspaceName: String,
+            val editableType: String,
+            val ownerId: String
+        ) : UiEvent()
 
-    private val _navigateHome = MutableLiveData<Boolean>()
-    val navigateHome: LiveData<Boolean> get() = _navigateHome
+        data class ReminderList(val reminderList: ArrayList<Reminder>) : UiEvent()
 
-    private val _workspaceName = MutableLiveData<String>()
-    val workspaceName: LiveData<String> get() = _workspaceName
+    }
 
-    private val _editableType = MutableLiveData<String>()
-    val editableType: LiveData<String> get() = _editableType
+    private val _uiEvent = MutableSharedFlow<UiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
 
-    private val _ownerId = MutableLiveData<String>()
-    val ownerId: LiveData<String> get() = _ownerId
-
-    private val _reminderList = MutableLiveData<ArrayList<Reminder>>()
-    val reminderList: LiveData<ArrayList<Reminder>> get() = _reminderList
 
     fun loadWorkspaceData(workspaceId: String) {
 
@@ -52,43 +53,47 @@ class OtherWorkspaceViewModel(application: Application) : AndroidViewModel(appli
 
             val currentUser = auth.currentUser
 
-            if (currentUser != null) {
-                val userId = currentUser.uid
+            if (currentUser == null) {
+                _uiEvent.emit(UiEvent.ShowToast("User not logged in"))
+                return@launch
+            }
+            val userId = currentUser.uid
 
-                _isLoading.value = true
 
-                try {
-                    val doc = firestore.collection("workspaces")
-                        .document(workspaceId)
-                        .get()
-                        .await()
+            _uiEvent.emit(UiEvent.ShowLoading)
 
-                    val members = doc.get("members") as? List<String> ?: emptyList()
+            try {
+                val doc = firestore.collection("workspaces")
+                    .document(workspaceId)
+                    .get()
+                    .await()
 
-                    // Eğer kullanıcı members listesinde yoksa yönlendir
-                    if (!members.contains(userId)) {
-                        _toastMessage.value = "You do not have access to this area"
-                        delay(500)
-                        _navigateHome.value = true
-                        return@launch
-                    }
+                val members = doc.get("members") as? List<String> ?: emptyList()
 
-                    // Kullanıcı üyeyse verileri yükle
-                    _ownerId.value = doc.getString("ownerId") ?: ""
-                    _editableType.value = doc.getString("editableType") ?: ""
-                    _workspaceName.value = doc.getString("workspaceName") ?: ""
-
-                    _isLoading.value = false
-
-                } catch (e: Exception) {
-                    _isLoading.value = false
-                    Log.e("Workspace", "Error fetching workspace: ${e.message}", e)
+                // Eğer kullanıcı members listesinde yoksa yönlendir
+                if (!members.contains(userId)) {
+                    _uiEvent.emit(UiEvent.ShowToast("You do not have access to this area"))
+                    _uiEvent.emit(UiEvent.NavigateHome)
+                    return@launch
                 }
 
+                // Kullanıcı üyeyse verileri yükle
+                _uiEvent.emit(UiEvent.WorkspaceInformations(
+                    ownerId = doc.getString("ownerId") ?: "",
+                    editableType = doc.getString("editableType") ?: "",
+                    workspaceName = doc.getString("workspaceName") ?: ""
+                ))
 
-            } else {
-                Log.d("Workspace", "User not logged in")
+
+
+                _uiEvent.emit(UiEvent.HideLoading)
+
+            } catch (e: Exception) {
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(UiEvent.ShowToast("Error fetching workspace: ${e.message}"))
             }
+
+
         }
     }
 
@@ -101,11 +106,11 @@ class OtherWorkspaceViewModel(application: Application) : AndroidViewModel(appli
             val currentUser = auth.currentUser
 
             if (currentUser == null) {
-                _toastMessage.value = "Error"
+                _uiEvent.emit(UiEvent.ShowToast("Error"))
                 return@launch
             }
 
-            _isLoading.value = true
+            _uiEvent.emit(UiEvent.ShowLoading)
 
             try {
                 val documents = firestore.collection("workspaces")
@@ -137,13 +142,12 @@ class OtherWorkspaceViewModel(application: Application) : AndroidViewModel(appli
                     }
                 }
 
-                _reminderList.value = reminderList
-
-                _isLoading.value = false
+                _uiEvent.emit(UiEvent.ReminderList(reminderList = reminderList))
+                _uiEvent.emit(UiEvent.HideLoading)
 
             } catch (e: Exception) {
-                _isLoading.value = false
-                _toastMessage.value = e.toString()
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(UiEvent.ShowToast(e.toString()))
             }
 
 

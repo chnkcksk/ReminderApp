@@ -56,41 +56,33 @@ class RegisterFragment : Fragment() {
 
 
         setupButtons()
-        setupLiveDatas()
+        setupObserves()
     }
 
-    fun setupLiveDatas() {
+    private fun setupObserves() {
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.uiEvent.collect { event ->
+                when (event) {
 
-        viewModel.viewSuccessDialog.observe(viewLifecycleOwner){
-            if (it == true){
-                successDialog.showSuccessDialog(requireContext())
+                    is RegisterViewModel.UiEvent.ShowLoading -> loadingManager.showLoading(requireContext())
+                    is RegisterViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
+                    is RegisterViewModel.UiEvent.ShowToast -> Toast.makeText(requireContext(), event.message, Toast.LENGTH_LONG).show()
+                    is RegisterViewModel.UiEvent.AccountCreated ->{
+                        loadingManager.dismissLoading {
+                            successDialog.showSuccessDialog(requireContext()){
+                                val action =
+                                    RegisterFragmentDirections.actionRegisterFragmentToEmailVerifyFragment()
+                                Navigation.findNavController(requireView()).navigate(action)
+                            }
+                        }
+                    }
+
+                }
             }
         }
-
-        viewModel.toastMessage.observe(viewLifecycleOwner) { message ->
-            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-        }
-
-        viewModel.navigateVerify.observe(viewLifecycleOwner) { navigate ->
-            if (navigate == true) {
-                val action =
-                    RegisterFragmentDirections.actionRegisterFragmentToEmailVerifyFragment()
-                Navigation.findNavController(requireView()).navigate(action)
-            }
-        }
-
-        viewModel.isloading.observe(viewLifecycleOwner) { isLoading ->
-
-            if (isLoading == true) {
-                loadingManager.showLoading(requireContext())
-            } else {
-                loadingManager.dismissLoading()
-            }
-
-        }
-
-
     }
+
+
 
     private fun setupButtons() {
         binding.backButton.setOnClickListener {
@@ -124,7 +116,7 @@ class RegisterFragment : Fragment() {
             val password = binding.registerPasswordET.text.toString()
 
 
-                viewModel.register(name, email, password)
+            viewModel.register(name, email, password)
 
 
         }

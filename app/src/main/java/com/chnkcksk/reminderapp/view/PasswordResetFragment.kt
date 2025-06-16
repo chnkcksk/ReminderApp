@@ -92,22 +92,28 @@ class PasswordResetFragment : Fragment() {
             Firebase.auth.sendPasswordResetEmail(email)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful){
-                        loadingManager.dismissLoading()
-                        Toast.makeText(
-                            requireContext(),
-                            "Password reset link has been sent to $email address",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        successDialog.showSuccessDialog(requireContext())
+                        loadingManager.dismissLoading{
+                            successDialog.showSuccessDialog(requireContext()){
+                                Toast.makeText(
+                                    requireContext(),
+                                    "Password reset link has been sent to $email address",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+
+
                         val action = PasswordResetFragmentDirections.actionPasswordResetFragmentToLoginFragment()
                         Navigation.findNavController(requireView()).navigate(action)
                     }else{
-                        loadingManager.dismissLoading()
-                        Toast.makeText(
-                            requireContext(),
-                            "Password reset failed: ${task.exception?.localizedMessage}",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        loadingManager.dismissLoading {
+                            Toast.makeText(
+                                requireContext(),
+                                "Password reset failed: ${task.exception?.localizedMessage}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+
                     }
                 }
         } else{

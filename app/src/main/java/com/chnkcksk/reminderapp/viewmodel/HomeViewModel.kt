@@ -13,8 +13,11 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import org.checkerframework.checker.units.qual.A
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -22,38 +25,48 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val auth: FirebaseAuth = Firebase.auth
     private val firestore = Firebase.firestore
-    private val notificationPermissionManager = NotificationPermissionManager.getInstance()
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isloading: LiveData<Boolean> get() = _isLoading
+    sealed class UiEvent {
+        object ShowLoading : UiEvent()
+        object HideLoading : UiEvent()
+        data class ShowToast(val message: String) : UiEvent()
+        object GoogleUser : UiEvent()
+        data class ReminderList(val reminderList: ArrayList<Reminder>) : UiEvent()
+        data class WorkspaceList(val workspaceList: ArrayList<DrawerMenuItem>) : UiEvent()
 
-    private val _toastMessage = MutableLiveData<String>()
-    val toastMessage: LiveData<String> get() = _toastMessage
+    }
 
-    private val _reminderList = MutableLiveData<ArrayList<Reminder>>()
-    val reminderList: LiveData<ArrayList<Reminder>> get() = _reminderList
+    private val _uiEvent = MutableSharedFlow<UiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
 
-    private val _workspaceList = MutableLiveData<ArrayList<DrawerMenuItem>>()
-    val workspaceList: LiveData<ArrayList<DrawerMenuItem>> get() = _workspaceList
 
-    private val _isGoogleUser = MutableLiveData<Boolean>()
-    val isGoogleUser: LiveData<Boolean> get() = _isGoogleUser
+//    private val _reminderList = MutableLiveData<ArrayList<Reminder>>()
+//    val reminderList: LiveData<ArrayList<Reminder>> get() = _reminderList
+//
+//    private val _workspaceList = MutableLiveData<ArrayList<DrawerMenuItem>>()
+//    val workspaceList: LiveData<ArrayList<DrawerMenuItem>> get() = _workspaceList
 
 
     fun getUserProviderData() {
 
-        val currentUser = auth.currentUser
 
-        if (currentUser == null) {
-            _toastMessage.value = "Current user is null"
-            return
-        }
+        viewModelScope.launch {
 
-        currentUser.providerData.forEach { profile ->
-            if (profile.providerId == "google.com") {
-                _isGoogleUser.value = true
+            val currentUser = auth.currentUser
+
+            if (currentUser == null) {
+                _uiEvent.emit(UiEvent.ShowToast("Current user is null"))
+                return@launch
+            }
+
+            currentUser.providerData.forEach { profile ->
+                if (profile.providerId == "google.com") {
+                    //Bu veri gonderilince fragmentta googleuser degeri true olacak
+                    _uiEvent.emit(UiEvent.GoogleUser)
+                }
             }
         }
+
 
     }
 
@@ -65,10 +78,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
             val currentUser = auth.currentUser
 
-            _isLoading.value = true
+            _uiEvent.emit(UiEvent.ShowLoading)
 
             if (currentUser == null) {
-                _toastMessage.value = "Error"
+                _uiEvent.emit(UiEvent.ShowToast("Error"))
                 return@launch
             }
 
@@ -106,14 +119,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
 
-                _reminderList.value = reminderList
-                _isLoading.value = false
+                _uiEvent.emit(
+                    UiEvent.ReminderList(
+                        reminderList = reminderList
+                    )
+                )
+                _uiEvent.emit(UiEvent.HideLoading)
 
             } catch (e: Exception) {
 
-                _isLoading.value = false
-                _toastMessage.value = "Failed to load reminders: $e"
-                println("Failed to load reminders: $e")
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(UiEvent.ShowToast("Failed to load reminders: $e"))
 
             }
 
@@ -174,13 +190,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             android.util.Log.d("HomeViewModel", "loadWorkspaces called")
 
             if (currentUser == null) {
-                _toastMessage.value = "Error"
+                _uiEvent.emit(UiEvent.ShowToast("Error"))
                 return@launch
             }
 
             val userId = currentUser.uid
 
-            _isLoading.value = true
+            _uiEvent.emit(UiEvent.ShowLoading)
 
             try {
                 val documents = firestore.collection("workspaces")
@@ -188,7 +204,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     .get()
                     .await()
 
-                _isLoading.value = false
+                _uiEvent.emit(UiEvent.HideLoading)
 
                 if (!documents.isEmpty) {
                     val workspaceList = ArrayList<DrawerMenuItem>()
@@ -202,17 +218,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         )
                         workspaceList.add(workspace)
                     }
-                    _workspaceList.value = workspaceList
+                    _uiEvent.emit(UiEvent.WorkspaceList(workspaceList = workspaceList))
                 } else {
-                    _workspaceList.value = ArrayList()
+                    _uiEvent.emit(UiEvent.WorkspaceList(workspaceList = ArrayList()))
                 }
 
             } catch (e: Exception) {
-                _isLoading.value = false
-                delay(1200)
-                _toastMessage.value =
-                    "Error retrieving workspaces: ${e.localizedMessage}"
-                _workspaceList.value = ArrayList()
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(UiEvent.ShowToast("Error retrieving workspaces: ${e.localizedMessage}"))
+                _uiEvent.emit(UiEvent.WorkspaceList(workspaceList = ArrayList()))
             }
         }
 

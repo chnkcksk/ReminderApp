@@ -73,43 +73,48 @@ class AddReminderOtherFragment : Fragment() {
     }
 
     private fun setupObserves() {
+        // Fragment'ın lifecycle'ına bağlı olarak coroutine başlatılıyor.
+        // launchWhenStarted -> Fragment STARTED durumunda collect başlar.
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.uiEvent.collect { event ->
 
-
+                // uiEvent SharedFlow'dan gelen eventleri kontrol ediyoruz
                 when (event) {
-                    is AddReminderOtherViewModel.UiEvent.ShowLoading -> loadingManager.showLoading(
-                        requireContext()
-                    )
 
-                    is AddReminderOtherViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
-                    is AddReminderOtherViewModel.UiEvent.ShowToast -> Toast.makeText(
-                        requireContext(),
-                        event.message,
-                        Toast.LENGTH_LONG
-                    ).show()
+                    // Yükleme göstergesini aç
+                    is AddReminderOtherViewModel.UiEvent.ShowLoading ->
+                        loadingManager.showLoading(requireContext())
 
+                    // Yükleme göstergesini kapat
+                    is AddReminderOtherViewModel.UiEvent.HideLoading ->
+                        loadingManager.dismissLoading()
+
+                    // Toast mesajı göster
+                    is AddReminderOtherViewModel.UiEvent.ShowToast ->
+                        Toast.makeText(requireContext(), event.message, Toast.LENGTH_LONG).show()
+
+                    // Workspace bilgilerini ekrana yazdır
                     is AddReminderOtherViewModel.UiEvent.WorkspaceInformations -> {
                         binding.workspaceNameOtherTV.text = event.workspaceName
                         binding.workspaceTypeOtherTV.text = event.workspaceType
                     }
 
-                    is AddReminderOtherViewModel.UiEvent.NavigateWorkspace -> goBack()
+                    // Workspace sayfasına geç
+                    is AddReminderOtherViewModel.UiEvent.NavigateWorkspace ->
+                        goBack()
+
+                    // Hatırlatıcı eklendiğinde hem loading kapatılıyor, hem toast gösteriliyor, hem geri dönülüyor
                     is AddReminderOtherViewModel.UiEvent.ReminderAdded -> {
                         loadingManager.dismissLoading {
-                            Toast.makeText(
-                                requireContext(),
-                                "Reminder added",
-                                Toast.LENGTH_LONG
-                            ).show()
+                            Toast.makeText(requireContext(), "Reminder added", Toast.LENGTH_LONG).show()
                             goBack()
                         }
                     }
                 }
-
             }
         }
     }
+
 
 
     private fun setupDateAndTimePicker() {

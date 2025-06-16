@@ -48,6 +48,7 @@ import com.google.firebase.auth.auth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -64,6 +65,12 @@ class HomeFragment : Fragment() {
 
     private val loadingManager = LoadingManager.getInstance()
     private val viewModel: HomeViewModel by viewModels()
+
+    private var isGoogleUser = false
+    private var reminderList = ArrayList<Reminder>()
+    private var workspaceList = ArrayList<DrawerMenuItem>()
+
+    private lateinit var reminderAdapter: ReminderAdapter
 
 
     // Bildirim izni için NotificationPermissionManager
@@ -93,13 +100,14 @@ class HomeFragment : Fragment() {
 
         viewModel.getUserProviderData()
 
-        requestNotificationPermission()
-        setupReminders()
-        setupLiveDatas()
-        setupToolbar()
-        setupDrawerMenu()
-        setupButtons()
 
+
+        setupObserves()
+        requestNotificationPermission()
+        setupToolbar()
+        setupButtons()
+        setupReminders()
+        setupDrawerMenu()
     }
 
 
@@ -145,7 +153,7 @@ class HomeFragment : Fragment() {
         viewModel.loadRemindersList()
 
 
-        val adapter = ReminderAdapter(
+        reminderAdapter = ReminderAdapter(
             requireContext(),
             "personalWorkspace",
             "Editable",
@@ -165,29 +173,44 @@ class HomeFragment : Fragment() {
 
         }
         binding.homeRecyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.homeRecyclerView.adapter = adapter
+        binding.homeRecyclerView.adapter = reminderAdapter
 
-        viewModel.reminderList.observe(viewLifecycleOwner) { reminderList ->
-            adapter.updateList(reminderList)
-        }
 
     }
 
-    private fun setupLiveDatas() {
-        viewModel.toastMessage.observe(viewLifecycleOwner) { message ->
-            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-        }
+    private fun setupObserves() {
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.uiEvent.collect { event ->
+                when (event) {
+                    is HomeViewModel.UiEvent.ShowLoading -> loadingManager.showLoading(
+                        requireContext()
+                    )
 
-        viewModel.isloading.observe(viewLifecycleOwner) { isLoading ->
-            if (isLoading) {
-                loadingManager.showLoading(requireContext())
-            } else {
-                loadingManager.dismissLoading()
+                    is HomeViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
+                    is HomeViewModel.UiEvent.ShowToast -> Toast.makeText(
+                        requireContext(),
+                        event.message,
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    is HomeViewModel.UiEvent.GoogleUser -> isGoogleUser = true
+
+                    is HomeViewModel.UiEvent.ReminderList -> {
+                        reminderList.clear()
+                        reminderList.addAll(event.reminderList)
+                        reminderAdapter.updateList(reminderList)
+                    }
+
+                    is HomeViewModel.UiEvent.WorkspaceList -> {
+                        workspaceList.clear()
+                        workspaceList.addAll(event.workspaceList)
+                        drawerMenuAdapter.updateList(workspaceList)
+                    }
+                }
             }
         }
-
-
     }
+
 
     private fun setupToolbar() {
         (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
@@ -249,11 +272,11 @@ class HomeFragment : Fragment() {
             Navigation.findNavController(requireView()).navigate(action)
         }
 
-        viewModel.isGoogleUser.observe(viewLifecycleOwner) { isGoogleUser ->
-            if (isGoogleUser == true) {
-                contentBinding.passwordChangeButton.isVisible = false
-            }
+
+        if (isGoogleUser == true) {
+            contentBinding.passwordChangeButton.isVisible = false
         }
+
 
         contentBinding.passwordChangeButton.setOnClickListener {
             val action = HomeFragmentDirections.actionHomeFragmentToPasswordChangeFragment()
@@ -281,27 +304,16 @@ class HomeFragment : Fragment() {
             adapter = drawerMenuAdapter
         }
 
-        // Workspace listesini observe et - DEBUG EKLEYIN
-        viewModel.workspaceList.observe(viewLifecycleOwner) { workspaceList ->
-            // DEBUG: Veri gelip gelmediğini kontrol edin
-            android.util.Log.d("HomeFragment", "Workspace list size: ${workspaceList?.size}")
-            workspaceList?.forEach { workspace ->
-                android.util.Log.d(
-                    "HomeFragment",
-                    "Workspace: ${workspace.title} - Type: ${workspace.workspaceType}"
-                )
-            }
 
-            if (workspaceList != null && workspaceList.isNotEmpty()) {
-                drawerMenuAdapter.updateList(workspaceList)
-                android.util.Log.d(
-                    "HomeFragment",
-                    "Adapter updated with ${workspaceList.size} items"
-                )
-            } else {
-                android.util.Log.d("HomeFragment", "Workspace list is empty or null")
-            }
+
+
+        if (workspaceList != null && workspaceList.isNotEmpty()) {
+            drawerMenuAdapter.updateList(workspaceList)
+
+        } else {
+            println("Workspace list is empty or null")
         }
+
 
         // Logout button click listener
         contentBinding.btnLogout.setOnClickListener {

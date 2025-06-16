@@ -90,106 +90,63 @@ class EditReminderFragment : Fragment() {
 
 
         setupObserves()
-
         setupSpinner()
         setupDateAndTimePicker()
         setupButtons()
     }
 
     private fun setupObserves() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.uiState.collect { state ->
-                updateUI(state)
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.uiEvent.collect{event ->
+
+                when(event){
+                    is EditReminderViewModel.UiEvent.ShowLoading -> loadingManager.showLoading(requireContext())
+                    is EditReminderViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
+                    is EditReminderViewModel.UiEvent.ShowToast -> Toast.makeText(requireContext(), event.message, Toast.LENGTH_LONG).show()
+                    is EditReminderViewModel.UiEvent.NavigateHome -> goBack()
+                    is EditReminderViewModel.UiEvent.SetNotification ->  requestNotification()
+
+                    is EditReminderViewModel.UiEvent.ReminderDeleted -> {
+                        loadingManager.dismissLoading {
+                            Toast.makeText(requireContext(), "Reminder deleted", Toast.LENGTH_LONG).show()
+                            goBack()
+                        }
+                    }
+                    is EditReminderViewModel.UiEvent.ReminderEdited ->{
+                        loadingManager.dismissLoading {
+                            Toast.makeText(requireContext(), "Reminder updated!", Toast.LENGTH_LONG).show()
+                            goBack()
+                        }
+                    }
+
+                    is EditReminderViewModel.UiEvent.ReminderInformations ->{
+                        binding.apply {
+                            editTitleET.setText(event.title)
+                            editDescriptionET.setText(event.description)
+                            editReminderDate.text = event.selectedDate
+                            editReminderTime.text = event.selectedTime
+                            editReminderCheckBox.isChecked = event.reminderState
+
+                            val selectedIndex = when(event.priority){
+                                "None" -> 0
+                                "Low" -> 1
+                                "Medium" -> 2
+                                "High" -> 3
+                                else -> 0
+                            }
+                            prioritySpinner.setSelection(selectedIndex)
+                        }
+                    }
+
+                }
+
             }
         }
-    }
-
-    private fun updateUI(state: EditReminderViewModel.UiState) {
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            // Loading
-            if (state.isLoading) {
-                loadingManager.showLoading(requireContext())
-            } else {
-                loadingManager.dismissLoading()
-            }
-
-            if (state.reminderDeleted == true) {
-                loadingManager.dismissLoading {
-                    Toast.makeText(requireContext(), "Reminder deleted", Toast.LENGTH_LONG).show()
-                    goBack()
-                }
-
-            }
-
-            if (state.reminderNotDeleted == true) {
-                loadingManager.dismissLoading {
-                    Toast.makeText(
-                        requireContext(),
-                        "Reminder could not be deleted: ${state.error}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-
-
-            }
-
-            if (state.reminderEdited == true) {
-                loadingManager.dismissLoading {
-                    Toast.makeText(requireContext(), "Reminder updated!", Toast.LENGTH_LONG).show()
-                    goBack()
-                }
-            }
-
-            if (state.reminderNotEdited == true) {
-                loadingManager.dismissLoading {
-                    Toast.makeText(
-                        requireContext(),
-                        "Reminder could not be updated! Please try again: ${state.error}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-
-
-            state.toastMessage?.let { message ->
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-                viewModel.clearToastMessage()
-            }
-
-            // Toast gösterildikten sonra navigasyonu yap
-            if (state.navigateHome) {
-                goBack()
-                viewModel.clearNavigateHome()
-            }
-
-            // Notification
-            if (state.setNotification) {
-                requestNotification()
-                viewModel.clearSetNotification() // Event'i temizle
-            }
-
-
-            // Form data
-            binding.editTitleET.setText(state.title)
-            binding.editDescriptionET.setText(state.description)
-            binding.editReminderDate.text = state.selectedDate
-            binding.editReminderTime.text = state.selectedTime
-            binding.editReminderCheckBox.isChecked = state.reminderState
-
-            // Priority spinner
-            val selectedIndex = when (state.priority) {
-                "None" -> 0
-                "Low" -> 1
-                "Medium" -> 2
-                "High" -> 3
-                else -> 0
-            }
-            binding.prioritySpinner.setSelection(selectedIndex)
-        }
-
 
     }
+
+
 
     private fun checkPermission() {
 

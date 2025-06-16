@@ -9,12 +9,14 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.adapter.ReminderAdapter
 import com.chnkcksk.reminderapp.databinding.FragmentAddWorkspaceBinding
 import com.chnkcksk.reminderapp.databinding.FragmentOtherWorkspaceBinding
+import com.chnkcksk.reminderapp.model.Reminder
 import com.chnkcksk.reminderapp.util.LoadingManager
 import com.chnkcksk.reminderapp.viewmodel.OtherWorkspaceViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -47,6 +49,9 @@ class OtherWorkspaceFragment : Fragment() {
     private var lastRefreshTime = 0L
     private val REFRESH_COOLDOWN = 5000L // 5 saniye
 
+    private lateinit var reminderAdapter: ReminderAdapter
+    private var reminderList = ArrayList<Reminder>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -74,44 +79,40 @@ class OtherWorkspaceFragment : Fragment() {
 
         //veriuleri cektigimiz fonksiyon
 
-            viewModel.loadWorkspaceData(workspaceId)
+        viewModel.loadWorkspaceData(workspaceId)
 
+        setupObserves()
 
 
         setupButtons()
-        setupLiveDatas()
     }
 
     private fun checkAndSetupReminders() {
         if (isEditableTypeLoaded && isOwnerIdLoaded && isWorkspaceNameLoaded) {
             setupOtherReminders()
-            if (editableType == "Read only" && ownerId != auth.currentUser?.uid){
+            if (editableType == "Read only" && ownerId != auth.currentUser?.uid) {
                 binding.otherAddFAB.isVisible = false
-            }
-            else{
+            } else {
                 binding.otherAddFAB.isVisible = true
             }
 
         }
 
 
-
-
     }
 
     private fun setupOtherReminders() {
 
-            viewModel.loadRemindersList(workspaceId)
-
+        viewModel.loadRemindersList(workspaceId)
 
 
         var owner = false
 
-        if (ownerId==auth.currentUser?.uid){
+        if (ownerId == auth.currentUser?.uid) {
             owner = true
         }
 
-        val adapter = ReminderAdapter(
+        reminderAdapter = ReminderAdapter(
             requireContext(),
             workspaceId,
             editableType,
@@ -138,11 +139,8 @@ class OtherWorkspaceFragment : Fragment() {
         }
 
         binding.otherWorkspaceRecyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.otherWorkspaceRecyclerView.adapter = adapter
+        binding.otherWorkspaceRecyclerView.adapter = reminderAdapter
 
-        viewModel.reminderList.observe(viewLifecycleOwner) { reminderList ->
-            adapter.updateList(reminderList)
-        }
     }
 
     private fun setupButtons() {
@@ -155,10 +153,11 @@ class OtherWorkspaceFragment : Fragment() {
             val currentTime = System.currentTimeMillis()
             if (currentTime - lastRefreshTime > REFRESH_COOLDOWN) {
 
-                    viewModel.loadWorkspaceData(workspaceId)
+                viewModel.loadWorkspaceData(workspaceId)
 
 
-                Toast.makeText(requireContext(),"Workspace data refreshed",Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Workspace data refreshed", Toast.LENGTH_SHORT)
+                    .show()
                 lastRefreshTime = currentTime
             }
             binding.swipeRefreshLayout.isRefreshing = false
@@ -194,21 +193,48 @@ class OtherWorkspaceFragment : Fragment() {
 
     }
 
-    private fun setupLiveDatas() {
-        viewModel.workspaceName.observe(viewLifecycleOwner) { workspaceName ->
-            binding.workspaceNameTV.text = workspaceName
-            isWorkspaceNameLoaded = true
-            checkAndSetupReminders()
-        }
-        viewModel.editableType.observe(viewLifecycleOwner) { it ->
-            editableType = it
-            isEditableTypeLoaded = true
-            checkAndSetupReminders()
-        }
-        viewModel.ownerId.observe(viewLifecycleOwner) {
-            ownerId = it
-            isOwnerIdLoaded = true
-            checkAndSetupReminders()
+    private fun setupObserves() {
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.uiEvent.collect { event ->
+
+                when (event) {
+
+                    is OtherWorkspaceViewModel.UiEvent.ShowLoading -> loadingManager.showLoading(
+                        requireContext()
+                    )
+
+                    is OtherWorkspaceViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
+                    is OtherWorkspaceViewModel.UiEvent.ShowToast -> Toast.makeText(
+                        requireContext(),
+                        event.message,
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    is OtherWorkspaceViewModel.UiEvent.NavigateHome -> goBack()
+                    is OtherWorkspaceViewModel.UiEvent.WorkspaceInformations -> {
+
+                        binding.workspaceNameTV.text = event.workspaceName
+                        isWorkspaceNameLoaded = true
+                        checkAndSetupReminders()
+
+                        editableType = event.editableType
+                        isEditableTypeLoaded = true
+                        checkAndSetupReminders()
+
+                        ownerId = event.ownerId
+                        isOwnerIdLoaded = true
+                        checkAndSetupReminders()
+
+                    }
+                    is OtherWorkspaceViewModel.UiEvent.ReminderList -> {
+                        reminderList.clear()
+                        reminderList.addAll(event.reminderList)
+                        reminderAdapter.updateList(reminderList)
+                    }
+
+                }
+
+            }
         }
     }
 

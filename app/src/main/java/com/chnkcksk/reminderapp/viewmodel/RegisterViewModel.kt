@@ -15,22 +15,25 @@ import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class RegisterViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _navigateVerify = MutableLiveData<Boolean>()
-    val navigateVerify: LiveData<Boolean> get() = _navigateVerify
+    sealed class UiEvent {
+        object AccountCreated : UiEvent()
 
-    private val _toastMessage = MutableLiveData<String>()
-    val toastMessage: LiveData<String> get() = _toastMessage
+        object ShowLoading : UiEvent()
+        object HideLoading : UiEvent()
+        data class ShowToast(val message: String) : UiEvent()
 
-    private val _isloading = MutableLiveData<Boolean>()
-    val isloading: LiveData<Boolean> get() = _isloading
+    }
 
-    private val _viewSuccessDialog = MutableLiveData<Boolean>()
-    val viewSuccessDialog: LiveData<Boolean> get() = _viewSuccessDialog
+    private val _uiEvent = MutableSharedFlow<UiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
+
 
     private val auth: FirebaseAuth = Firebase.auth
 
@@ -38,79 +41,30 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
 
 
-
-        if (name.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()) {
-            _toastMessage.value = "Please fill empty fields"
-            return@launch
-        }
-
-        val formattedName = name.lowercase().split(" ").joinToString(" ") { it.capitalize() }
-
-        _isloading.value = true
-
-        try {
-
-            val authResult = auth.createUserWithEmailAndPassword(email,password)
-                .await()
-
-            val user = authResult.user ?: throw Exception("User creation failed")
-
-            val profileUpdates = userProfileChangeRequest {
-                displayName = formattedName
-                // photoUri = ... // Profil resmi eklemek isterseniz burada ayarlayabilirsiniz
+            if (name.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()) {
+                _uiEvent.emit(UiEvent.ShowToast("Please fill empty fields"))
+                return@launch
             }
 
-            user.updateProfile(profileUpdates).await()
+            val formattedName = name.lowercase().split(" ").joinToString(" ") { it.capitalize() }
 
-            user.sendEmailVerification().await()
+            _uiEvent.emit(UiEvent.ShowLoading)
 
-            val userMap = hashMapOf(
-                "email" to email,
-                "name" to name,
-                "emailVerified" to false
-            )
+            try {
 
-            Firebase.firestore.collection("Users").document(user.uid).set(userMap).await()
+                val authResult = auth.createUserWithEmailAndPassword(email, password)
+                    .await()
 
-            _isloading.value = false
-            delay(1200)
-            _viewSuccessDialog.value = true
-            delay(2000)
-            _navigateVerify.value = true
-
-        }catch (e:Exception){
-            _isloading.value = false
-            delay(1200)
-            _toastMessage.value = e.localizedMessage ?: "An error occurred"
-        }
-
-        /*
-        auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                val user = auth.currentUser
-                val uid = user?.uid
-
+                val user = authResult.user ?: throw Exception("User creation failed")
 
                 val profileUpdates = userProfileChangeRequest {
                     displayName = formattedName
                     // photoUri = ... // Profil resmi eklemek isterseniz burada ayarlayabilirsiniz
                 }
 
-                user?.updateProfile(profileUpdates)?.addOnCompleteListener { profileTask ->
-                    if (!profileTask.isSuccessful) {
-                        _toastMessage.value = "Profile update failed"
-                    }
-                }
+                user.updateProfile(profileUpdates).await()
 
-                // E-posta doğrulama bağlantısı gönder
-                user?.sendEmailVerification()?.addOnCompleteListener { verificationTask ->
-                    if (verificationTask.isSuccessful) {
-                        _toastMessage.value = "Verification email sent to ${user.email}"
-                    } else {
-                        _toastMessage.value =
-                            "Failed to send verification email: ${verificationTask.exception?.localizedMessage}"
-                    }
-                }
+                user.sendEmailVerification().await()
 
                 val userMap = hashMapOf(
                     "email" to email,
@@ -118,34 +72,79 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                     "emailVerified" to false
                 )
 
-                if (uid != null) {
-                    Firebase.firestore.collection("Users").document(uid).set(userMap)
-                        .addOnSuccessListener {
-                            _isloading.value = false
-                            _toastMessage.value =
-                                "Account created. Please verify your email before logging in."
-                            _viewSuccessDialog.value = true
-                            // E-posta doğrulama bilgilendirme sayfasına yönlendir
-                            _navigateVerify.value = true
-                        }.addOnFailureListener { e ->
-                            _isloading.value = false
-                            _toastMessage.value =
-                                "User saved but info failed: ${e.localizedMessage}"
-                        }
+                Firebase.firestore.collection("Users").document(user.uid).set(userMap).await()
 
+                //Hesap olusturuldu dogrulama ekranina gonder
+
+                _uiEvent.emit(UiEvent.AccountCreated)
+
+            } catch (e: Exception) {
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(UiEvent.ShowToast(e.localizedMessage ?: "An error occurred"))
+            }
+
+            /*
+            auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val user = auth.currentUser
+                    val uid = user?.uid
+
+
+                    val profileUpdates = userProfileChangeRequest {
+                        displayName = formattedName
+                        // photoUri = ... // Profil resmi eklemek isterseniz burada ayarlayabilirsiniz
+                    }
+
+                    user?.updateProfile(profileUpdates)?.addOnCompleteListener { profileTask ->
+                        if (!profileTask.isSuccessful) {
+                            _toastMessage.value = "Profile update failed"
+                        }
+                    }
+
+                    // E-posta doğrulama bağlantısı gönder
+                    user?.sendEmailVerification()?.addOnCompleteListener { verificationTask ->
+                        if (verificationTask.isSuccessful) {
+                            _toastMessage.value = "Verification email sent to ${user.email}"
+                        } else {
+                            _toastMessage.value =
+                                "Failed to send verification email: ${verificationTask.exception?.localizedMessage}"
+                        }
+                    }
+
+                    val userMap = hashMapOf(
+                        "email" to email,
+                        "name" to name,
+                        "emailVerified" to false
+                    )
+
+                    if (uid != null) {
+                        Firebase.firestore.collection("Users").document(uid).set(userMap)
+                            .addOnSuccessListener {
+                                _isloading.value = false
+                                _toastMessage.value =
+                                    "Account created. Please verify your email before logging in."
+                                _viewSuccessDialog.value = true
+                                // E-posta doğrulama bilgilendirme sayfasına yönlendir
+                                _navigateVerify.value = true
+                            }.addOnFailureListener { e ->
+                                _isloading.value = false
+                                _toastMessage.value =
+                                    "User saved but info failed: ${e.localizedMessage}"
+                            }
+
+
+                    }
 
                 }
 
+
+            }.addOnFailureListener { e ->
+                _isloading.value = false
+                _toastMessage.value = e.localizedMessage
+
             }
 
-
-        }.addOnFailureListener { e ->
-            _isloading.value = false
-            _toastMessage.value = e.localizedMessage
-
-        }
-
-         */
+             */
         }
 
     }

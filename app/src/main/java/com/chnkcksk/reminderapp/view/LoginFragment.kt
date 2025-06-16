@@ -28,6 +28,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 
@@ -36,7 +37,7 @@ class LoginFragment : Fragment() {
     private var _binding: FragmentLoginBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel : LoginViewModel by viewModels()
+    private val viewModel: LoginViewModel by viewModels()
     private lateinit var auth: FirebaseAuth
 
     private val loadingManager = LoadingManager.getInstance()
@@ -61,7 +62,7 @@ class LoginFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        _binding = FragmentLoginBinding.inflate(inflater,container,false)
+        _binding = FragmentLoginBinding.inflate(inflater, container, false)
         val view = binding.root
         return view
     }
@@ -72,41 +73,70 @@ class LoginFragment : Fragment() {
         // Google Sign-In'i başlat
         viewModel.initializeGoogleSignIn(requireActivity())
 
-        setupLiveDatas()
+        setupObserves()
         setupButtons()
     }
 
-    private fun setupLiveDatas(){
-        viewModel.toastMessage.observe(viewLifecycleOwner){message ->
-            Toast.makeText(requireContext(), message,Toast.LENGTH_LONG).show()
-        }
-        viewModel.navigateToHome.observe(viewLifecycleOwner){ shouldNavigate ->
-            if (shouldNavigate) {
-                val action = MainNavGraphDirections.actionLoginToHome()
-                Navigation.findNavController(requireView()).navigate(action)
+    private fun setupObserves() {
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.uiEvent.collect { event ->
+
+                when (event) {
+
+                    is LoginViewModel.UiEvent.ShowLoading -> loadingManager.showLoading(
+                        requireContext()
+                    )
+
+                    is LoginViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
+                    is LoginViewModel.UiEvent.ShowToast -> showToast(event.message)
+                    is LoginViewModel.UiEvent.NavigateHome -> {
+                        val action = MainNavGraphDirections.actionLoginToHome()
+                        Navigation.findNavController(requireView()).navigate(action)
+                    }
+
+                    is LoginViewModel.UiEvent.NavigateVerify -> {
+                        val action =
+                            LoginFragmentDirections.actionLoginFragmentToEmailVerifyFragment()
+                        Navigation.findNavController(requireView()).navigate(action)
+                    }
+
+                    is LoginViewModel.UiEvent.VerifyEmail -> {
+                        loadingManager.dismissLoading {
+                            showToast("Please verify your email before logging in.")
+
+                            val action =
+                                LoginFragmentDirections.actionLoginFragmentToEmailVerifyFragment()
+                            Navigation.findNavController(requireView()).navigate(action)
+                        }
+                    }
+
+                    is LoginViewModel.UiEvent.GoogleUser -> {
+                        loadingManager.dismissLoading {
+                            showToast(event.message)
+
+
+                            val action = MainNavGraphDirections.actionLoginToHome()
+                            Navigation.findNavController(requireView()).navigate(action)
+                        }
+                    }
+
+
+                }
+
             }
         }
-        viewModel.navigateVerify.observe(viewLifecycleOwner){ shouldNavigate ->
-            if (shouldNavigate) {
-                val action = LoginFragmentDirections.actionLoginFragmentToEmailVerifyFragment()
-                Navigation.findNavController(requireView()).navigate(action)
-            }
-        }
-        
-        // Loading state'ini gözlemle
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            if (isLoading) {
-                loadingManager.showLoading(requireContext(), "Signing in...")
-            } else {
-                loadingManager.dismissLoading()
-            }
-        }
+
+
     }
+
 
     private fun setupButtons() {
         // Eski şifre görünürlük kontrolü
         binding.oldPasswordVisibilityToggle.setOnClickListener {
-            viewModel.togglePasswordVisibility(binding.loginPasswordET, binding.oldPasswordVisibilityToggle)
+            viewModel.togglePasswordVisibility(
+                binding.loginPasswordET,
+                binding.oldPasswordVisibilityToggle
+            )
         }
 
         binding.loginButton.setOnClickListener {
@@ -114,8 +144,7 @@ class LoginFragment : Fragment() {
             val password = binding.loginPasswordET.text.toString()
 
 
-                viewModel.login(email, password)
-
+            viewModel.login(email, password)
 
 
         }
@@ -152,7 +181,12 @@ class LoginFragment : Fragment() {
         }
     }
 
-    private fun goBack(){
+    private fun showToast(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+    }
+
+
+    private fun goBack() {
         val action = LoginFragmentDirections.actionLoginFragmentToWelcomeFragment()
         Navigation.findNavController(requireView()).navigate(action)
     }

@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentEditReminderBinding
@@ -31,6 +32,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 
@@ -75,21 +77,22 @@ class EditWorkspaceFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.editWorkspaceButton.isVisible= false
+        binding.editWorkspaceButton.isVisible = false
         binding.linearLayout11.isVisible = false
 
 
-            viewModel.fetchWorkspaceMemberNames(workspaceId!!)
-            viewModel.getWorkspaceData(workspaceId!!)
+        viewModel.fetchWorkspaceMemberNames(workspaceId!!)
+        viewModel.getWorkspaceData(workspaceId!!)
 
 
 
 
         setupInvisible()
         setupSpinners()
-        setupLiveDatas()
+        setupObservers()
         setupButtons()
     }
+
 
     private fun setupInvisible() {
         binding.editWorkspaceTypeSpinner.onItemSelectedListener =
@@ -126,7 +129,7 @@ class EditWorkspaceFragment : Fragment() {
 
     }
 
-    private fun setupToOwner(){
+    private fun setupToOwner() {
         binding.deleteWorkspaceButton.setImageResource(R.drawable.baseline_delete_outline_24)
         binding.deleteWorkspaceButton.setOnClickListener {
             deleteDialog()
@@ -134,7 +137,7 @@ class EditWorkspaceFragment : Fragment() {
         binding.editWorkspaceButton.isVisible = true
     }
 
-    private fun setupToGuest(){
+    private fun setupToGuest() {
 
         binding.editWorkspaceButton.isVisible = false
 
@@ -152,7 +155,7 @@ class EditWorkspaceFragment : Fragment() {
                 .setMessage("Are you sure you want to leave the workspace?")
                 .setPositiveButton("Yes") { _, _ ->
 
-                        viewModel.quitWorkspace(workspaceId!!)
+                    viewModel.quitWorkspace(workspaceId!!)
 
 
                     val action =
@@ -166,9 +169,11 @@ class EditWorkspaceFragment : Fragment() {
                     setOnShowListener {
                         // Butonların metin rengini değiştir
                         getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
-                            ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                            ContextCompat.getColor(requireContext(), R.color.primary_text_color)
+                        )
                         getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
-                            ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                            ContextCompat.getColor(requireContext(), R.color.secondary_color)
+                        )
                     }
                 }
                 .show()
@@ -176,93 +181,97 @@ class EditWorkspaceFragment : Fragment() {
         }
     }
 
-    private fun setupLiveDatas() {
+    private fun setupObservers() {
 
-        viewModel.viewSuccessDialog.observe(viewLifecycleOwner){ showSuccessDialog ->
-            if (showSuccessDialog==true){
-                successDialog.showSuccessDialog(requireContext())
-            }
-        }
-        viewModel.toastMessage.observe(viewLifecycleOwner) { message ->
-            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-        }
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            if (isLoading == true) {
-                loadingManager.showLoadingQuick(requireContext())
-            } else {
-                loadingManager.dismissLoading()
-            }
-        }
-        viewModel.navigateWorkspace.observe(viewLifecycleOwner) { isNavigate ->
-            if (isNavigate) {
-                goBack()
-            }
-        }
-        viewModel.navigateHome.observe(viewLifecycleOwner) {
-            if (it) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.uiEvent.collect { event ->
+                when (event) {
 
-                val action =
-                    EditWorkspaceFragmentDirections.actionEditWorkspaceFragmentToHomeFragment()
-                Navigation.findNavController(requireView()).navigate(action)
-            }
-        }
+                    is EditWorkspaceViewModel.UiEvent.QuitWorkspace -> {
+                        loadingManager.dismissLoading {
+                            successDialog.showSuccessDialog(requireContext()) {
+                                goHome()
+                            }
+                        }
+                    }
+                    is EditWorkspaceViewModel.UiEvent.WorkspaceDeleted ->{
+                        loadingManager.dismissLoading {
+                            successDialog.showSuccessDialog(requireContext()){
+                                goHome()
+                            }
+                        }
+                    }
+                    is EditWorkspaceViewModel.UiEvent.WorkspaceEdited ->{
+                        loadingManager.dismissLoading{
+                            successDialog.showSuccessDialog(requireContext()){
+                                goBack()
+                            }
+                        }
+                    }
+
+                    is EditWorkspaceViewModel.UiEvent.NavigateHome -> goHome()
+                    is EditWorkspaceViewModel.UiEvent.ShowLoading -> loadingManager.showLoading(
+                        requireContext()
+                    )
+
+                    is EditWorkspaceViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
+                    is EditWorkspaceViewModel.UiEvent.ShowToast -> Toast.makeText(requireContext(), event.message, Toast.LENGTH_LONG).show()
+
+                    is EditWorkspaceViewModel.UiEvent.MembersList -> {
+                        val formattedText =
+                            event.members.joinToString(separator = "\n") { name -> "- $name" }
+                        binding.personListTV.text = formattedText
+                    }
+
+                    is EditWorkspaceViewModel.UiEvent.WorkspaceInformation -> {
+                        binding.workspaceNameEditET.setText(event.workspaceName)
+
+                        if (event.workspaceType == "Personal") {
+                            binding.linearLayout11.isVisible = false
+                            isPersonal = true
+                        } else {
+                            binding.linearLayout11.isVisible = true
+                        }
+                        val selectedIndexWorkspaceType = when (event.workspaceType) {
+                            "Group" -> 0
+                            "Personal" -> 1
+                            else -> 0 // default
+                        }
+                        binding.editWorkspaceTypeSpinner.setSelection(selectedIndexWorkspaceType)
+
+                        binding.workspaceCodeTV.text = event.workspaceCode
+
+                        val currentUser = auth.currentUser
+
+                        if (currentUser != null) {
+
+                            val userId = currentUser.uid
+
+                            if (event.ownerId != userId) {
+
+                                setupToGuest()
+                            } else {
+                                setupToOwner()
+
+                            }
+
+                        }
+
+                        val selectedIndexEditableType = when (event.editableType) {
+                            "Editable" -> 0
+                            "Read only" -> 1
+                            else -> 0 // default
+                        }
+                        binding.editWorkspaceEditableSpinner.setSelection(selectedIndexEditableType)
+
+                    }
 
 
-        viewModel.workspaceName.observe(viewLifecycleOwner) {
-            binding.workspaceNameEditET.setText(it)
-        }
-        viewModel.workspaceType.observe(viewLifecycleOwner) {
-            if (it == "Personal") {
-                binding.linearLayout11.isVisible = false
-                isPersonal = true
-            }else{
-                binding.linearLayout11.isVisible = true
-            }
-            val selectedIndex = when (it) {
-                "Group" -> 0
-                "Personal" -> 1
-                else -> 0 // default
-            }
-            binding.editWorkspaceTypeSpinner.setSelection(selectedIndex)
-        }
-        viewModel.workspaceCode.observe(viewLifecycleOwner) {
-            binding.workspaceCodeTV.text = it
-        }
-
-        viewModel.ownerId.observe(viewLifecycleOwner) { ownerId ->
-
-            val currentUser = auth.currentUser
-
-            if (currentUser != null) {
-
-                val userId = currentUser.uid
-
-                if (ownerId != userId) {
-
-                    setupToGuest()
-                } else {
-                   setupToOwner()
 
                 }
-
             }
-
-
         }
-        viewModel.memberNames.observe(viewLifecycleOwner) {
-            val formattedText = it.joinToString(separator = "\n") { name -> "- $name" }
-            binding.personListTV.text = formattedText
-        }
-        viewModel.editableType.observe(viewLifecycleOwner) {
 
-            val selectedIndex = when (it) {
-                "Editable" -> 0
-                "Read only" -> 1
-                else -> 0 // default
-            }
-            binding.editWorkspaceEditableSpinner.setSelection(selectedIndex)
-
-        }
     }
 
     private fun setupSpinners() {
@@ -282,23 +291,25 @@ class EditWorkspaceFragment : Fragment() {
 
     }
 
-    private fun cancelEditAndGoBack(){
+    private fun cancelEditAndGoBack() {
         androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
             .setTitle("Are you sure?")
             .setMessage("Are you sure you want to cancel the edit and leave?")
-            .setPositiveButton("Yes"){_,_ ->
+            .setPositiveButton("Yes") { _, _ ->
                 goBack()
             }
-            .setNegativeButton("No",null)
+            .setNegativeButton("No", null)
             .setCancelable(false)
             .create()
             .apply {
                 setOnShowListener {
                     // Butonların metin rengini değiştir
                     getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
-                        ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                        ContextCompat.getColor(requireContext(), R.color.primary_text_color)
+                    )
                     getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
-                        ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                        ContextCompat.getColor(requireContext(), R.color.secondary_color)
+                    )
                 }
             }
             .show()
@@ -358,13 +369,13 @@ class EditWorkspaceFragment : Fragment() {
                     .setPositiveButton("Yes") { _, _ ->
                         kickOthers = true
 
-                            viewModel.editWorkspace(
-                                workspaceId!!,
-                                editedWorkspaceName,
-                                wT,
-                                eT,
-                                kickOthers
-                            )
+                        viewModel.editWorkspace(
+                            workspaceId!!,
+                            editedWorkspaceName,
+                            wT,
+                            eT,
+                            kickOthers
+                        )
 
 
                     }.setNegativeButton("No", null)
@@ -374,16 +385,18 @@ class EditWorkspaceFragment : Fragment() {
                         setOnShowListener {
                             // Butonların metin rengini değiştir
                             getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
-                                ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                                ContextCompat.getColor(requireContext(), R.color.primary_text_color)
+                            )
                             getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
-                                ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                                ContextCompat.getColor(requireContext(), R.color.secondary_color)
+                            )
                         }
                     }
                     .show()
 
             } else {
 
-                    viewModel.editWorkspace(workspaceId!!, editedWorkspaceName, wT, eT, kickOthers)
+                viewModel.editWorkspace(workspaceId!!, editedWorkspaceName, wT, eT, kickOthers)
 
 
             }
@@ -393,12 +406,12 @@ class EditWorkspaceFragment : Fragment() {
     }
 
     private fun deleteDialog() {
-        AlertDialog.Builder(requireContext(),R.style.MyDialogTheme)
+        AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
             .setTitle("Delete")
             .setMessage("Are you sure you want to delete the workspace?")
             .setPositiveButton("Yes") { _, _ ->
 
-                    viewModel.deleteWorkspace(workspaceId!!)
+                viewModel.deleteWorkspace(workspaceId!!)
 
 
                 val action =
@@ -412,12 +425,19 @@ class EditWorkspaceFragment : Fragment() {
                 setOnShowListener {
                     // Butonların metin rengini değiştir
                     getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
-                        ContextCompat.getColor(requireContext(), R.color.primary_text_color))
+                        ContextCompat.getColor(requireContext(), R.color.primary_text_color)
+                    )
                     getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
-                        ContextCompat.getColor(requireContext(), R.color.secondary_color))
+                        ContextCompat.getColor(requireContext(), R.color.secondary_color)
+                    )
                 }
             }
             .show()
+    }
+
+    private fun goHome() {
+        val action = EditWorkspaceFragmentDirections.actionEditWorkspaceFragmentToHomeFragment()
+        Navigation.findNavController(requireView()).navigate(action)
     }
 
     private fun goBack() {

@@ -27,22 +27,26 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _toastMessage = MutableLiveData<String>()
-    val toastMessage: LiveData<String> get() = _toastMessage
+    sealed class UiEvent {
+        data class GoogleUser(val message: String) : UiEvent()
+        object VerifyEmail:UiEvent()
 
-    private val _navigateToHome = MutableLiveData<Boolean>()
-    val navigateToHome: LiveData<Boolean> get() = _navigateToHome
+        object ShowLoading : UiEvent()
+        object HideLoading : UiEvent()
+        object NavigateHome : UiEvent()
+        object NavigateVerify : UiEvent()
+        data class ShowToast(val message: String) : UiEvent()
+    }
 
-    private val _navigateVerify = MutableLiveData<Boolean>()
-    val navigateVerify: LiveData<Boolean> get() = _navigateVerify
-
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> get() = _isLoading
+    private val _uiEvent = MutableSharedFlow<UiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
 
     private val auth: FirebaseAuth = Firebase.auth
     private val firestore = Firebase.firestore
@@ -64,17 +68,24 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun handleGoogleSignInResult(task: Task<GoogleSignInAccount>) {
-        _isLoading.value = true
-        try {
-            val account = task.getResult(ApiException::class.java)
-            viewModelScope.launch {
-                firebaseAuthWithGoogle(account.idToken!!)
-            }
+        viewModelScope.launch {
 
-        } catch (e: ApiException) {
-            _isLoading.value = false
-            _toastMessage.value = "Google sign in failed: ${e.localizedMessage}"
+            _uiEvent.emit(UiEvent.ShowLoading)
+
+            try {
+                val account = task.getResult(ApiException::class.java)
+
+                firebaseAuthWithGoogle(account.idToken!!)
+
+                _uiEvent.emit(UiEvent.HideLoading)
+
+            } catch (e: ApiException) {
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(UiEvent.ShowToast("Google sign in failed: ${e.localizedMessage}"))
+            }
         }
+
+
     }
 
     private suspend fun firebaseAuthWithGoogle(idToken: String) {
@@ -84,59 +95,51 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             // Firebase Auth ile giriş yap
             val authResult = auth.signInWithCredential(credential).await()
 
-            if (authResult.user != null) {
-                val user = auth.currentUser
-                val uid = user?.uid
-
-                if (uid != null) {
-                    // Kullanıcının Firestore'da mevcut olup olmadığını kontrol et
-                    val document = firestore.collection("Users")
-                        .document(uid)
-                        .get()
-                        .await()
-
-                    if (!document.exists()) {
-                        // Yeni kullanıcı, Firestore'a kaydet
-                        val userMap = hashMapOf(
-                            "email" to user.email,
-                            "name" to user.displayName,
-                            "emailVerified" to true // Google hesapları zaten doğrulanmış
-                        )
-
-                        firestore.collection("Users")
-                            .document(uid)
-                            .set(userMap)
-                            .await()
-
-                        _isLoading.value = false
-                        delay(1200)
-                        _toastMessage.value = "Welcome! Account created successfully."
-                        delay(500)
-                        _navigateToHome.value = true
-
-                    } else {
-                        // Mevcut kullanıcı
-                        _isLoading.value = false
-                        delay(1200)
-                        _toastMessage.value = "Welcome back!"
-                        delay(500)
-                        _navigateToHome.value = true
-                    }
-                } else {
-                    _isLoading.value = false
-                    delay(1200)
-                    _toastMessage.value = "Failed to get user ID"
-                }
-            } else {
-                _isLoading.value = false
-                delay(1200)
-                _toastMessage.value = "Authentication failed"
+            if (authResult.user == null) {
+                _uiEvent.emit(UiEvent.ShowToast("Authentication failed"))
+                return
             }
 
+            val user = auth.currentUser
+            val uid = user?.uid
+
+            if (uid == null) {
+                _uiEvent.emit(UiEvent.ShowToast("Failed to get user ID"))
+                return
+            }
+
+
+            // Kullanıcının Firestore'da mevcut olup olmadığını kontrol et
+            val document = firestore.collection("Users")
+                .document(uid)
+                .get()
+                .await()
+
+            if (!document.exists()) {
+                // Yeni kullanıcı, Firestore'a kaydet
+                val userMap = hashMapOf(
+                    "email" to user.email,
+                    "name" to user.displayName,
+                    "emailVerified" to true // Google hesapları zaten doğrulanmış
+                )
+
+                firestore.collection("Users")
+                    .document(uid)
+                    .set(userMap)
+                    .await()
+
+                _uiEvent.emit(UiEvent.GoogleUser("Welcome! Account created successfully."))
+
+
+            } else {
+                _uiEvent.emit(UiEvent.GoogleUser("Welcome back!"))
+                // Mevcut kullanıcı
+            }
+
+
         } catch (e: Exception) {
-            _isLoading.value = false
-            delay(1200)
-            _toastMessage.value = "Authentication failed: ${e.localizedMessage}"
+            _uiEvent.emit(UiEvent.HideLoading)
+            _uiEvent.emit(UiEvent.ShowToast("\"Authentication failed: ${e.localizedMessage}\""))
         }
     }
 
@@ -159,39 +162,33 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
 
-        if (email.isEmpty() || password.isEmpty()) {
-            _isLoading.value = false
-            _toastMessage.value = "Please enter email and password!"
-            return@launch
-        }
-
-        try {
-            _isLoading.value = true
-
-            val result = auth.signInWithEmailAndPassword(email, password).await()
-            val user = result.user ?: throw Exception("User not found")
-
-            user.reload().await()
-
-            if (user.isEmailVerified) {
-                _isLoading.value = false
-                delay(1200)
-                _navigateToHome.value = true
-            } else {
-                auth.signOut()
-                _isLoading.value = false
-                delay(1200)
-                _toastMessage.value = "Please verify your email before logging in."
-                delay(500)
-                _navigateVerify.value = true
+            if (email.isEmpty() || password.isEmpty()) {
+                _uiEvent.emit(UiEvent.ShowToast("Please enter email and password!"))
+                return@launch
             }
 
-        } catch (e: Exception) {
-            _isLoading.value = false
-            delay(1200)
-            _toastMessage.value = e.localizedMessage ?: "Login failed"
-        }
-        //finally { }
+            try {
+                _uiEvent.emit(UiEvent.ShowLoading)
+
+                val result = auth.signInWithEmailAndPassword(email, password).await()
+                val user = result.user ?: throw Exception("User not found")
+
+                user.reload().await()
+
+                if (user.isEmailVerified) {
+                    _uiEvent.emit(UiEvent.HideLoading)
+                    _uiEvent.emit(UiEvent.NavigateHome)
+                } else {
+                    auth.signOut()
+
+                    _uiEvent.emit(UiEvent.VerifyEmail)
+                }
+
+            } catch (e: Exception) {
+                _uiEvent.emit(UiEvent.HideLoading)
+                _uiEvent.emit(UiEvent.ShowToast(e.localizedMessage ?: "Login failed"))
+            }
+            //finally { }
         }
     }
 
