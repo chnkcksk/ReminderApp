@@ -1,6 +1,8 @@
 package com.chnkcksk.reminderapp.view
 
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -9,10 +11,13 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -72,9 +77,12 @@ class HomeFragment : Fragment() {
 
     private lateinit var reminderAdapter: ReminderAdapter
 
-
     // Bildirim izni için NotificationPermissionManager
     private lateinit var permissionManager: NotificationPermissionManager
+
+    private lateinit var sharedPref : SharedPreferences
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,6 +92,8 @@ class HomeFragment : Fragment() {
 
         permissionManager = NotificationPermissionManager.getInstance()
             .registerPermissionLauncher(this)
+
+        sharedPref = requireContext().getSharedPreferences("MyPrefs", MODE_PRIVATE)
     }
 
     override fun onCreateView(
@@ -98,6 +108,7 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
 
+
         viewModel.getUserProviderData()
 
 
@@ -108,6 +119,7 @@ class HomeFragment : Fragment() {
         setupButtons()
         setupReminders()
         setupDrawerMenu()
+
     }
 
 
@@ -148,35 +160,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun setupReminders() {
 
-        viewModel.loadRemindersList()
-
-
-        reminderAdapter = ReminderAdapter(
-            requireContext(),
-            "personalWorkspace",
-            "Editable",
-            true,
-            ArrayList()
-        ) { reminder ->
-
-            // Fragment burada kontrolü eline alıyor
-            val workspaceId = "personalWorkspace" // Eğer bu sabitse
-            val reminderId = reminder.id
-
-            val action = HomeFragmentDirections.actionHomeFragmentToEditReminderFragment(
-                workspaceId,
-                reminderId
-            )
-            Navigation.findNavController(requireView()).navigate(action)
-
-        }
-        binding.homeRecyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.homeRecyclerView.adapter = reminderAdapter
-
-
-    }
 
     private fun setupObserves() {
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
@@ -198,7 +182,10 @@ class HomeFragment : Fragment() {
                     is HomeViewModel.UiEvent.ReminderList -> {
                         reminderList.clear()
                         reminderList.addAll(event.reminderList)
-                        reminderAdapter.updateList(reminderList)
+
+                        // Kaydedilen sıralama tercihini al → listeyi sırala
+                        val savedPosition = sharedPref.getInt("sortBy", 0)
+                        sortReminderList(savedPosition)
                     }
 
                     is HomeViewModel.UiEvent.WorkspaceList -> {
@@ -228,6 +215,99 @@ class HomeFragment : Fragment() {
 
         binding.drawerLayout.addDrawerListener(drawerToggle)
         drawerToggle.syncState()
+    }
+
+    private fun setupReminders() {
+
+
+        viewModel.loadRemindersList()
+
+
+        reminderAdapter = ReminderAdapter(
+            requireContext(),
+            "personalWorkspace",
+            "Editable",
+            true,
+            ArrayList()
+        ) { reminder ->
+
+            // Fragment burada kontrolü eline alıyor
+            val workspaceId = "personalWorkspace" // Eğer bu sabitse
+            val reminderId = reminder.id
+
+            val action = HomeFragmentDirections.actionHomeFragmentToEditReminderFragment(
+                workspaceId,
+                reminderId
+            )
+            Navigation.findNavController(requireView()).navigate(action)
+
+        }
+        binding.homeRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.homeRecyclerView.adapter = reminderAdapter
+
+        setupSpinner()
+
+    }
+
+    private fun setupSpinner() {
+        val sortTypes = resources.getStringArray(R.array.sort_values)
+
+        val adapter = ArrayAdapter(requireContext(), R.layout.custom_home_spinner, sortTypes)
+        adapter.setDropDownViewResource(R.layout.custom_home_spinner)
+        binding.sortSpinner.adapter = adapter
+
+
+        val editor = sharedPref.edit()
+
+        // SharedPreferences'tan kaydedilen değeri oku → spinner pozisyonu ayarla
+        val savedPosition = sharedPref.getInt("sortBy", 0)
+        binding.sortSpinner.setSelection(savedPosition)
+
+        // İlk açıldığında listeyi kaydedilen sıraya göre sırala
+        sortReminderList(savedPosition)
+
+
+        binding.sortSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                editor.putInt("sortBy", position).apply()
+                sortReminderList(position)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+
+
+        }
+
+    }
+
+    private fun sortReminderList(position: Int) {
+        val sortedList = when (position) {
+            0 -> reminderList.sortedByDescending { it.timestamp.toLongOrNull() ?: 0L } //Date
+            1 -> reminderList.sortedBy { it.timestamp.toLongOrNull() ?: 0L } //Date-Reverse
+            2 -> reminderList.sortedBy {
+                return@sortedBy when (it.priority.lowercase()) {
+                    "high" -> 0
+                    "medium" -> 1
+                    "low" -> 2
+                    "none" -> 3
+                    else -> 4 // bilinmeyen öncelik en sona
+                }
+            } //Priority
+            3 -> reminderList.sortedWith(
+                compareByDescending<Reminder> { it.reminder }
+                    .thenByDescending { it.timestamp.toLongOrNull() ?: 0L }
+            ) // Reminder
+            else -> reminderList
+        }
+
+        Log.d("ReminderCheck", "Sorted List: ${sortedList.map { "${it.title} - ${it.reminder}" }}")
+
+        reminderAdapter.updateList(ArrayList(sortedList))
     }
 
 
@@ -321,8 +401,6 @@ class HomeFragment : Fragment() {
                 .setTitle("Are You Sure?")
                 .setMessage("Are you sure you want to log out?")
                 .setPositiveButton("Yes") { _, _ ->
-                    val action = MainNavGraphDirections.actionHomeToLogin()
-                    Navigation.findNavController(requireView()).navigate(action)
                     signOut()
                 }
                 .setNegativeButton("No") { _, _ ->
@@ -436,13 +514,15 @@ class HomeFragment : Fragment() {
                 // Başarılı çıkış sonrası welcome ekranına yönlendir
                 withContext(Dispatchers.Main) {
                     //Navigasyon
+                    val action = MainNavGraphDirections.actionHomeToLogin()
+                    Navigation.findNavController(requireView()).navigate(action)
                 }
             } catch (e: Exception) {
                 // Hata durumunda kullanıcıya bilgi ver
                 withContext(Dispatchers.Main) {
                     Toast.makeText(
                         requireContext(),
-                        "Çıkış yapılırken bir hata oluştu: ${e.localizedMessage}",
+                        "An error occurred while logging out: ${e.localizedMessage}",
                         Toast.LENGTH_SHORT
                     ).show()
                 }

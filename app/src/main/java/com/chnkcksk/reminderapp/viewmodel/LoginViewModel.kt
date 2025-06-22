@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Intent
 import android.provider.ContactsContract.CommonDataKinds.Email
 import android.text.method.PasswordTransformationMethod
+import android.util.Log
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
@@ -69,47 +70,53 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     fun handleGoogleSignInResult(task: Task<GoogleSignInAccount>) {
         viewModelScope.launch {
-
+            Log.d("LoginViewModel", "handleGoogleSignInResult called")
             _uiEvent.emit(UiEvent.ShowLoading)
 
             try {
                 val account = task.getResult(ApiException::class.java)
+                Log.d("LoginViewModel", "Google account obtained: ${account.email}")
 
                 firebaseAuthWithGoogle(account.idToken!!)
 
-                _uiEvent.emit(UiEvent.HideLoading)
-
             } catch (e: ApiException) {
+                Log.e("LoginViewModel", "Google Sign-In failed", e)
                 _uiEvent.emit(UiEvent.HideLoading)
                 _uiEvent.emit(UiEvent.ShowToast("Google sign in failed: ${e.localizedMessage}"))
             }
         }
-
-
     }
 
     private suspend fun firebaseAuthWithGoogle(idToken: String) {
+        Log.d("LoginViewModel", "firebaseAuthWithGoogle called")
         val credential = GoogleAuthProvider.getCredential(idToken, null)
 
         try {
             // Firebase Auth ile giriş yap
+            Log.d("LoginViewModel", "Attempting Firebase authentication")
             val authResult = auth.signInWithCredential(credential).await()
+            Log.d("LoginViewModel", "Firebase authentication successful")
 
             if (authResult.user == null) {
+                Log.e("LoginViewModel", "Auth result user is null")
+                _uiEvent.emit(UiEvent.HideLoading)
                 _uiEvent.emit(UiEvent.ShowToast("Authentication failed"))
                 return
             }
 
             val user = auth.currentUser
             val uid = user?.uid
+            Log.d("LoginViewModel", "User UID: $uid, Email: ${user?.email}")
 
             if (uid == null) {
+                Log.e("LoginViewModel", "User UID is null")
+                _uiEvent.emit(UiEvent.HideLoading)
                 _uiEvent.emit(UiEvent.ShowToast("Failed to get user ID"))
                 return
             }
 
-
             // Kullanıcının Firestore'da mevcut olup olmadığını kontrol et
+            Log.d("LoginViewModel", "Checking Firestore for user document")
             val document = firestore.collection("Users")
                 .document(uid)
                 .get()
@@ -117,6 +124,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
             if (!document.exists()) {
                 // Yeni kullanıcı, Firestore'a kaydet
+                Log.d("LoginViewModel", "Creating new user in Firestore")
                 val userMap = hashMapOf(
                     "email" to user.email,
                     "name" to user.displayName,
@@ -128,18 +136,21 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                     .set(userMap)
                     .await()
 
+                Log.d("LoginViewModel", "New user created successfully")
+                _uiEvent.emit(UiEvent.HideLoading)
                 _uiEvent.emit(UiEvent.GoogleUser("Welcome! Account created successfully."))
 
-
             } else {
+                Log.d("LoginViewModel", "Existing user found")
+                _uiEvent.emit(UiEvent.HideLoading)
                 _uiEvent.emit(UiEvent.GoogleUser("Welcome back!"))
                 // Mevcut kullanıcı
             }
 
-
         } catch (e: Exception) {
+            Log.e("LoginViewModel", "Firebase authentication failed", e)
             _uiEvent.emit(UiEvent.HideLoading)
-            _uiEvent.emit(UiEvent.ShowToast("\"Authentication failed: ${e.localizedMessage}\""))
+            _uiEvent.emit(UiEvent.ShowToast("Authentication failed: ${e.localizedMessage}"))
         }
     }
 

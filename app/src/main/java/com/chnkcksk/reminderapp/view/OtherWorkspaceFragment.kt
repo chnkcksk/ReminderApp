@@ -149,6 +149,11 @@ class OtherWorkspaceFragment : Fragment() {
             goBack()
         }
 
+        binding.chatButton.setOnClickListener{
+            val action = OtherWorkspaceFragmentDirections.actionOtherWorkspaceFragmentToChatFragment(workspaceId)
+            Navigation.findNavController(requireView()).navigate(action)
+        }
+
         binding.swipeRefreshLayout.setOnRefreshListener {
             val currentTime = System.currentTimeMillis()
             if (currentTime - lastRefreshTime > REFRESH_COOLDOWN) {

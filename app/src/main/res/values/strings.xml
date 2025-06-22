@@ -21,6 +21,13 @@
         <item>Personal</item>
     </string-array>
 
+    <string-array name="sort_values">
+        <item>Date</item>
+        <item>Date R</item>
+        <item>Priority</item>
+        <item>Reminder</item>
+    </string-array>
+
     <string name="default_web_client_id">870944994497-2ummjrii91gfinekkf78gtrcaq10hlgf.apps.googleusercontent.com</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>

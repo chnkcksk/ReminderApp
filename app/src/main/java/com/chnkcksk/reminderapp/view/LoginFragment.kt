@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.method.PasswordTransformationMethod
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -46,9 +47,15 @@ class LoginFragment : Fragment() {
     private val googleSignInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        Log.d("LoginFragment", "Google Sign-In result received: ${result.resultCode}")
         if (result.resultCode == Activity.RESULT_OK) {
+            Log.d("LoginFragment", "Google Sign-In successful, processing result")
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             viewModel.handleGoogleSignInResult(task)
+        } else {
+            // Google Sign-In iptal edildi veya başarısız oldu
+            Log.e("LoginFragment", "Google Sign-In failed or cancelled")
+            showToast("Google Sign-In was cancelled or failed")
         }
     }
 
@@ -111,13 +118,9 @@ class LoginFragment : Fragment() {
                     }
 
                     is LoginViewModel.UiEvent.GoogleUser -> {
-                        loadingManager.dismissLoading {
-                            showToast(event.message)
-
-
-                            val action = MainNavGraphDirections.actionLoginToHome()
-                            Navigation.findNavController(requireView()).navigate(action)
-                        }
+                        showToast(event.message)
+                        val action = MainNavGraphDirections.actionLoginToHome()
+                        Navigation.findNavController(requireView()).navigate(action)
                     }
 
 
@@ -173,10 +176,15 @@ class LoginFragment : Fragment() {
 
 
         binding.continueGoogleButton.setOnClickListener {
+            Log.d("LoginFragment", "Google Sign-In button clicked")
             // Google Sign-In intent'ini başlat
             val signInIntent = viewModel.getGoogleSignInIntent()
-            signInIntent?.let {
-                googleSignInLauncher.launch(it)
+            if (signInIntent != null) {
+                Log.d("LoginFragment", "Launching Google Sign-In intent")
+                googleSignInLauncher.launch(signInIntent)
+            } else {
+                Log.e("LoginFragment", "Google Sign-In intent is null")
+                showToast("Google Sign-In is not available")
             }
         }
     }

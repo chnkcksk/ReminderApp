@@ -1,6 +1,7 @@
 package com.chnkcksk.reminderapp.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -98,6 +99,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 val reminderList = ArrayList<Reminder>()
 
                 documents.forEach { document ->
+
+                    val reminderValue = document.getBoolean("reminder")
+                    Log.d("ReminderCheck", "Reminder ID: ${document.id} - reminder: $reminderValue")
+
+
                     val reminder = Reminder(
                         id = document.id,
                         title = document.getString("title") ?: "",
@@ -130,6 +136,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
                 _uiEvent.emit(UiEvent.HideLoading)
                 _uiEvent.emit(UiEvent.ShowToast("Failed to load reminders: $e"))
+                Log.d("Home", "Failed to load reminders: $e")
 
             }
 
@@ -178,7 +185,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     }
 
-    // HomeViewModel.kt - loadWorkspaces() fonksiyonuna debug ekleyin
 
 
     fun loadWorkspaces() {

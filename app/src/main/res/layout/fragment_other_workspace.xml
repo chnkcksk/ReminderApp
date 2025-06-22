@@ -22,6 +22,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:id="@+id/textView25"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
@@ -31,6 +32,21 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+
+    <ImageButton
+        android:id="@+id/chatButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="16dp"
+        android:background="@color/main_bg_color"
+        android:clickable="true"
+        android:focusable="true"
+        android:layout_marginTop="8dp"
+        android:foreground="?attr/selectableItemBackground"
+        android:src="@drawable/baseline_chat_24"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/editWorkspaceButton" />
 
     <ImageButton
         android:id="@+id/editWorkspaceButton"

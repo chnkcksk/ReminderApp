@@ -7,31 +7,40 @@ import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.model.Reminder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 
 class ReminderWidgetFactory(private val context: Context) : RemoteViewsService.RemoteViewsFactory {
 
     private val itemList = mutableListOf<Reminder>()
 
-    override fun onCreate() {}
+    override fun onCreate() {
+        // İlk oluşturulduğunda verileri yükle
+        loadData()
+    }
 
     override fun onDataSetChanged() {
+        // Veri seti değiştiğinde yeniden yükle
+        loadData()
+    }
+
+    private fun loadData() {
         itemList.clear()
 
         val firestore = FirebaseFirestore.getInstance()
         val auth = FirebaseAuth.getInstance()
         val user = auth.currentUser ?: return
 
-        val latch = CountDownLatch(1)
+        runBlocking {
+            try {
+                val documents = firestore.collection("Users")
+                    .document(user.uid)
+                    .collection("workspaces")
+                    .document("personalWorkspace")
+                    .collection("reminders")
+                    .get()
+                    .await()
 
-        firestore.collection("Users")
-            .document(user.uid)
-            .collection("workspaces")
-            .document("personalWorkspace")
-            .collection("reminders")
-            .get()
-            .addOnSuccessListener { documents ->
                 val tempList = ArrayList<Reminder>()
 
                 for (document in documents) {
@@ -58,13 +67,10 @@ class ReminderWidgetFactory(private val context: Context) : RemoteViewsService.R
                 }
 
                 itemList.addAll(tempList.take(3))
-                latch.countDown()
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            .addOnFailureListener {
-                latch.countDown()
-            }
-
-        latch.await(5, TimeUnit.SECONDS)
+        }
     }
 
     override fun getCount(): Int = itemList.size

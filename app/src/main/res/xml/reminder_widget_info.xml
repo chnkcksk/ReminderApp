@@ -4,4 +4,5 @@
     android:updatePeriodMillis="3600000"
     android:initialLayout="@layout/reminder_widget"
     android:resizeMode="horizontal|vertical"
-    android:widgetCategory="home_screen" />
+    android:widgetCategory="home_screen"
+    />

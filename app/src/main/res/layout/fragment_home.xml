@@ -36,24 +36,62 @@
 
         </com.google.android.material.appbar.AppBarLayout>
 
-        <TextView
-            android:id="@+id/textView6"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:fontFamily="@font/public_sans_bold"
-            android:text="Personal"
-            android:textSize="18sp"
+        <LinearLayout
+            android:id="@+id/linearll"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/appBarLayout" />
+            app:layout_constraintTop_toBottomOf="@+id/appBarLayout">
+
+            <TextView
+                android:id="@+id/textView6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginLeft="16dp"
+                android:layout_gravity="center"
+                android:fontFamily="@font/public_sans_bold"
+                android:text="Personal"
+                android:textSize="18sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="16dp"
+                android:layout_gravity="center"
+                android:fontFamily="@font/public_sans"
+                android:text="Sort by:"
+                android:layout_marginRight="2dp"
+                android:textSize="14sp" />
+
+            <Spinner
+                android:id="@+id/sortSpinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginRight="16dp"
+                android:gravity="center"
+                app:layout_constraintTop_toBottomOf="@+id/appBarLayout"
+                android:background="@android:color/transparent"
+                android:layout_gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"/>
+
+        </LinearLayout>
+
+
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/homeRecyclerView"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textView6" />
+            app:layout_constraintTop_toBottomOf="@+id/linearll" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/homeAddFAB"

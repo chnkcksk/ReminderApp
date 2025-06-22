@@ -98,18 +98,23 @@ class AddReminderFragment : Fragment() {
     private fun setupObserves() {
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.uiEvent.collect{ event ->
+            viewModel.uiEvent.collect { event ->
 
-                when(event){
-                    is AddReminderViewModel.UiEvent.ShowLoading ->loadingManager.showLoading(requireContext())
+                when (event) {
+                    is AddReminderViewModel.UiEvent.ShowLoading -> loadingManager.showLoading(
+                        requireContext()
+                    )
+
                     is AddReminderViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
                     is AddReminderViewModel.UiEvent.ShowToast ->
                         Toast.makeText(requireContext(), event.message, Toast.LENGTH_SHORT).show()
+
                     is AddReminderViewModel.UiEvent.NavigateHome -> goBack()
                     is AddReminderViewModel.UiEvent.SetNotification -> requestNotification()
                     is AddReminderViewModel.UiEvent.ReminderAdded -> {
                         loadingManager.dismissLoading {
-                            Toast.makeText(requireContext(), "Reminder saved", Toast.LENGTH_LONG).show()
+                            Toast.makeText(requireContext(), "Reminder saved", Toast.LENGTH_LONG)
+                                .show()
                             //Buraya delay eklemek istiyorum
                             goBack()
                         }
@@ -121,7 +126,6 @@ class AddReminderFragment : Fragment() {
         }
 
     }
-
 
 
     override fun onResume() {
@@ -190,7 +194,8 @@ class AddReminderFragment : Fragment() {
                 .setMessage("You need to grant notification permission for the app to send notifications. Would you like to go to the settings?")
                 .setPositiveButton("Settings") { _, _ ->
                     permissionManager.openAppSettings(ctx)
-                    val prefs = requireActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                    val prefs =
+                        requireActivity().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
                     prefs.edit().putBoolean(KEY_GOING_TO_SETTINGS, true).apply()
                 }
                 .setNegativeButton("Cancel") { _, _ ->
@@ -205,8 +210,18 @@ class AddReminderFragment : Fragment() {
                 .apply {
                     setOnShowListener {
                         // Butonların metin rengini değiştir
-                        getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(ctx, R.color.primary_text_color))
-                        getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(ctx, R.color.secondary_color))
+                        getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(
+                            ContextCompat.getColor(
+                                ctx,
+                                R.color.primary_text_color
+                            )
+                        )
+                        getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+                            ContextCompat.getColor(
+                                ctx,
+                                R.color.secondary_color
+                            )
+                        )
                     }
                 }
                 .show()
@@ -409,25 +424,23 @@ class AddReminderFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            if (title.isEmpty() || description.isEmpty()) {
-                Toast.makeText(requireContext(), "Please fill in the blanks!", Toast.LENGTH_LONG)
+            if (title.isEmpty()) {
+                Toast.makeText(requireContext(), "Please fill in the title value!", Toast.LENGTH_LONG)
                     .show()
-            } else {
-
-
-
-                    viewModel.addReminder(
-                        title,
-                        description,
-                        priority,
-                        selectedDate,
-                        selectedTime,
-                        isNotificationChecked
-                    )
-
-
-
+                return@setOnClickListener
             }
+
+
+
+            viewModel.addReminder(
+                title,
+                description,
+                priority,
+                selectedDate,
+                selectedTime,
+                isNotificationChecked
+            )
+
 
         }
         binding.addTitleET

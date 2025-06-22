@@ -163,6 +163,7 @@ class EmailVerifyFragment : Fragment() {
                     "Failed to send verification email: ${task.exception?.localizedMessage}",
                     Toast.LENGTH_LONG
                 ).show()
+                println("Failed to send verification email: ${task.exception?.localizedMessage}")
             }
 
         }

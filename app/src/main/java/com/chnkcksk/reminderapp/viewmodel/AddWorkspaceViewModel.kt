@@ -23,6 +23,7 @@ class AddWorkspaceViewModel(application: Application) : AndroidViewModel(applica
     private val firestore = Firebase.firestore
 
     sealed class UiEvent {
+
         object WorkspaceCreated : UiEvent()
         object WorkspaceJoined : UiEvent()
 

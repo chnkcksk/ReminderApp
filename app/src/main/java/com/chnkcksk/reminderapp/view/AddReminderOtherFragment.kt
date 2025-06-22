@@ -179,10 +179,11 @@ class AddReminderOtherFragment : Fragment() {
             val selectedDate = binding.addReminderDateOther.text.toString()
             val selectedTime = binding.addReminderTimeOther.text.toString()
 
-            if (title.isEmpty() || description.isEmpty()) {
-                Toast.makeText(requireContext(), "Please fill in the blanks!", Toast.LENGTH_LONG)
+            if (title.isEmpty()) {
+                Toast.makeText(requireContext(), "Please fill in the title value!", Toast.LENGTH_LONG)
                     .show()
-            } else {
+                return@setOnClickListener
+            }
 
 
                 viewModel.addOtherReminder(
@@ -195,7 +196,7 @@ class AddReminderOtherFragment : Fragment() {
                 )
 
 
-            }
+
 
 
         }
