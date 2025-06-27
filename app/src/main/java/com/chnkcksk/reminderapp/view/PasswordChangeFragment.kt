@@ -17,6 +17,7 @@ import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentLoginBinding
 import com.chnkcksk.reminderapp.databinding.FragmentPasswordChangeBinding
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.NetworkHelper
 import com.chnkcksk.reminderapp.util.SuccessDialog
 import com.chnkcksk.reminderapp.viewmodel.LoginViewModel
 import com.chnkcksk.reminderapp.viewmodel.PasswordChangeViewModel
@@ -56,6 +57,9 @@ class PasswordChangeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (!NetworkHelper.isInternetAvailable(requireContext())) {
+            NetworkHelper.showNoInternetDialog(requireContext(), requireView(), requireActivity())
+        }
 
         setupObserves()
         setupButtons()

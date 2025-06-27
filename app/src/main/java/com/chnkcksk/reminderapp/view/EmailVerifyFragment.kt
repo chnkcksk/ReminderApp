@@ -13,6 +13,7 @@ import com.chnkcksk.reminderapp.MainNavGraphDirections
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentEmailVerifyBinding
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.NetworkHelper
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.tasks.Tasks
@@ -51,6 +52,8 @@ class EmailVerifyFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+
 
         setupText()
         setupButtons()
@@ -197,7 +200,7 @@ class EmailVerifyFragment : Fragment() {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(
                         requireContext(),
-                        "Çıkış yapılırken bir hata oluştu: ${e.localizedMessage}",
+                        "An error occurred while logging out: ${e.localizedMessage}",
                         Toast.LENGTH_SHORT
                     ).show()
                 }

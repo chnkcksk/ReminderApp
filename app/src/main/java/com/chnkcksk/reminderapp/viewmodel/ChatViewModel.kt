@@ -26,7 +26,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         object HideLoading : UiEvent()
         data class ShowToast(val message: String) : UiEvent()
 
-        object ClearMessage : UiEvent()
+        object MessageSended : UiEvent()
+        object MessageDeleted : UiEvent()
     }
 
     private val _uiEvent = MutableSharedFlow<UiEvent>()
@@ -61,7 +62,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     .await()
 
                 //islem basariliysa
-                _uiEvent.emit(UiEvent.ClearMessage)
+                _uiEvent.emit(UiEvent.MessageSended)
 
 
             } catch (e: Exception) {
@@ -115,7 +116,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     .delete()
                     .await()
 
-
+                    _uiEvent.emit(UiEvent.MessageDeleted)
 
             }
             catch (e:Exception){

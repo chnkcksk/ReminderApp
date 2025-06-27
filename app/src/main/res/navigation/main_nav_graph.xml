@@ -40,6 +40,22 @@
             android:defaultValue="@id/homeFragment" />
     </action>
 
+    <!-- Login'den Settings'e direkt geçiş -->
+    <action
+        android:id="@+id/action_delete_to_welcome"
+        app:popUpTo="@id/core_nav_graph"
+        app:destination="@id/auth_nav_graph"
+        app:enterAnim="@animator/nav_default_enter_anim"
+        app:exitAnim="@animator/nav_default_exit_anim"
+        app:popEnterAnim="@animator/nav_default_pop_enter_anim"
+        app:popExitAnim="@animator/nav_default_pop_exit_anim"
+        app:popUpToInclusive="true">
+        <!-- Settings fragment'ını hedef olarak belirt -->
+        <argument
+            android:name="destination"
+            android:defaultValue="@id/welcomeFragment" />
+    </action>
+
     <action
         android:id="@+id/action_welcome_to_home"
         app:destination="@id/core_nav_graph"

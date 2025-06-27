@@ -76,7 +76,14 @@ class AddWorkspaceViewModel(application: Application) : AndroidViewModel(applica
         _uiEvent.emit(UiEvent.ShowLoading)
 
         val userId = currentUser.uid
-        val joinCode = generateJoinCode()
+
+
+        //joincode generate ve kontrol islemi
+        val joinCode = generateUniqueJoinCode()
+
+        firestore.collection("workspaces")
+
+
 
         val workspace = hashMapOf(
             "workspaceName" to workspaceName,
@@ -191,13 +198,26 @@ class AddWorkspaceViewModel(application: Application) : AndroidViewModel(applica
 
     }
 
-    fun generateJoinCode(length: Int = 6): String {
-        val allowedChars = "ABCDEFGHJKMNPQRSTUVWXYZ123456789" // I, L, O, 0 yok
-        return (1..length)
-            .map { allowedChars.random() }
-            .joinToString("")
 
+    suspend fun generateUniqueJoinCode(length: Int = 8): String {
+        val allowedChars = "ABCDEFGHJKMNPQRSTUVWXYZ123456789"
+
+        while (true) {
+            val joinCode = (1..length)
+                .map { allowedChars.random() }
+                .joinToString("")
+
+            val querySnapshot = firestore.collection("workspaces")
+                .whereEqualTo("joinCode", joinCode)
+                .get()
+                .await()
+
+            if (querySnapshot.isEmpty) {
+                return joinCode
+            }
+        }
     }
+
 
 
 }

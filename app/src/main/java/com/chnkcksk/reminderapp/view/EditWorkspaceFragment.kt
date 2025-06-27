@@ -24,6 +24,7 @@ import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentEditReminderBinding
 import com.chnkcksk.reminderapp.databinding.FragmentEditWorkspaceBinding
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.NetworkHelper
 import com.chnkcksk.reminderapp.util.SuccessDialog
 import com.chnkcksk.reminderapp.viewmodel.EditWorkspaceViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -53,8 +54,6 @@ class EditWorkspaceFragment : Fragment() {
 
     private var isPersonal: Boolean = false
 
-    private var kickOthers: Boolean = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -77,15 +76,19 @@ class EditWorkspaceFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+
+
         binding.editWorkspaceButton.isVisible = false
         binding.linearLayout11.isVisible = false
-
+        binding.editWorkspaceButton.isEnabled = false
+        binding.editWorkspaceButton.isClickable = false
 
         viewModel.fetchWorkspaceMemberNames(workspaceId!!)
         viewModel.getWorkspaceData(workspaceId!!)
 
-
-
+        if (!NetworkHelper.isInternetAvailable(requireContext())) {
+            NetworkHelper.showNoInternetDialog(requireContext(), requireView(), requireActivity())
+        }
 
         setupInvisible()
         setupSpinners()
@@ -358,23 +361,31 @@ class EditWorkspaceFragment : Fragment() {
             })
 
         binding.editWorkspaceButton.setOnClickListener {
+
+
+
             val editedWorkspaceName = binding.workspaceNameEditET.text.toString()
             val wT = binding.editWorkspaceTypeSpinner.selectedItem.toString()
             val eT = binding.editWorkspaceEditableSpinner.selectedItem.toString()
 
+            var kickOthers = false
+            var deleteMessages = false
+
             if (isPersonal == false && wT == "Personal") {
                 AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
                     .setTitle("Are You Sure")
-                    .setMessage("")
+                    .setMessage("Are you sure you want to continue?")
                     .setPositiveButton("Yes") { _, _ ->
                         kickOthers = true
+                        deleteMessages = true
 
                         viewModel.editWorkspace(
                             workspaceId!!,
                             editedWorkspaceName,
                             wT,
                             eT,
-                            kickOthers
+                            kickOthers,
+                            deleteMessages
                         )
 
 
@@ -396,7 +407,7 @@ class EditWorkspaceFragment : Fragment() {
 
             } else {
 
-                viewModel.editWorkspace(workspaceId!!, editedWorkspaceName, wT, eT, kickOthers)
+                viewModel.editWorkspace(workspaceId!!, editedWorkspaceName, wT, eT, kickOthers, deleteMessages)
 
 
             }
@@ -436,9 +447,12 @@ class EditWorkspaceFragment : Fragment() {
     }
 
     private fun goHome() {
-        val action = EditWorkspaceFragmentDirections.actionEditWorkspaceFragmentToHomeFragment()
-        Navigation.findNavController(requireView()).navigate(action)
+        view?.let {
+            val action = EditWorkspaceFragmentDirections.actionEditWorkspaceFragmentToHomeFragment()
+            Navigation.findNavController(it).navigate(action)
+        } ?: println("goHome(): View is null, navigate yapılmadı.")
     }
+
 
     private fun goBack() {
         val action =

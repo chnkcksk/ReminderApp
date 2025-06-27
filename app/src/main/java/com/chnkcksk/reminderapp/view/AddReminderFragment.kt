@@ -29,7 +29,9 @@ import com.chnkcksk.reminderapp.adapter.DrawerMenuAdapter
 import com.chnkcksk.reminderapp.databinding.FragmentAddReminderBinding
 import com.chnkcksk.reminderapp.databinding.FragmentHomeBinding
 import com.chnkcksk.reminderapp.permissions.NotificationPermissionManager
+import com.chnkcksk.reminderapp.util.AuthManager
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.NetworkHelper
 import com.chnkcksk.reminderapp.viewmodel.AddReminderViewModel
 import com.chnkcksk.reminderapp.worker.WorkerNotification
 import com.google.android.material.snackbar.Snackbar
@@ -84,16 +86,19 @@ class AddReminderFragment : Fragment() {
         return binding.root
     }
 
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setupObserves()
+        if (!NetworkHelper.isInternetAvailable(requireContext())) {
+            NetworkHelper.showNoInternetDialog(requireContext(), requireView(), requireActivity())
+        }
 
+        setupObserves()
         setupDateAndTimePicker()
         setupButtons()
         setupSpinner()
     }
+
 
     private fun setupObserves() {
 
@@ -126,7 +131,6 @@ class AddReminderFragment : Fragment() {
         }
 
     }
-
 
     override fun onResume() {
         super.onResume()
@@ -259,7 +263,7 @@ class AddReminderFragment : Fragment() {
             channelId = "main_channel",
             channelName = "Home Page Notifications",
             channelDescription = "Home page custom notifications",
-            iconResId = android.R.drawable.ic_dialog_info,
+            iconResId = R.mipmap.ic_launcher,
             autoCancel = true,
             priority = NotificationCompat.PRIORITY_HIGH,
             vibrate = true,
@@ -277,7 +281,7 @@ class AddReminderFragment : Fragment() {
                 override fun onPermissionDenied() {
                     Toast.makeText(
                         requireContext(),
-                        "Ana sayfa bildirimi gönderilemedi",
+                        "Failed to send home page notification",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -320,7 +324,7 @@ class AddReminderFragment : Fragment() {
 
         Toast.makeText(
             requireContext(),
-            "Bildirim ${binding.addReminderDate.text} tarihinde ${binding.addReminderTime.text} saatinde ayarlandi!",
+            "The notification is set on ${binding.addReminderDate.text} at time ${binding.addReminderTime.text}!",
             Toast.LENGTH_SHORT
         ).show()
 
@@ -425,7 +429,11 @@ class AddReminderFragment : Fragment() {
             }
 
             if (title.isEmpty()) {
-                Toast.makeText(requireContext(), "Please fill in the title value!", Toast.LENGTH_LONG)
+                Toast.makeText(
+                    requireContext(),
+                    "Please fill in the title value!",
+                    Toast.LENGTH_LONG
+                )
                     .show()
                 return@setOnClickListener
             }

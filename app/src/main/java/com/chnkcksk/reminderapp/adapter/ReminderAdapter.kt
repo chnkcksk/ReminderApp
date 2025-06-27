@@ -2,14 +2,18 @@ package com.chnkcksk.reminderapp.adapter
 
 import android.content.Context
 import android.content.res.ColorStateList
-import android.graphics.Paint
+import android.graphics.*
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.ItemTouchHelper
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.ReminderRecyclerRowBinding
 import com.chnkcksk.reminderapp.model.Reminder
@@ -20,6 +24,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import androidx.appcompat.app.AlertDialog
 
 class ReminderAdapter(
     private val context: Context,
@@ -27,8 +32,8 @@ class ReminderAdapter(
     private val isReadOnly: String,
     private val owner:Boolean,
     private val homeReminderList: ArrayList<Reminder>,
-    private val onItemClick: (Reminder) -> Unit
-
+    private val onItemClick: (Reminder) -> Unit,
+    private val onItemDelete: ((Reminder, Int) -> Unit)? = null // Silme callback'i eklendi
 
 ) :
     RecyclerView.Adapter<ReminderAdapter.ReminderViewHolder>() {
@@ -80,16 +85,12 @@ class ReminderAdapter(
             holder.binding.reminderIV.setImageResource(R.drawable.baseline_notifications_none_24)
         }
 
-
-
-
         holder.itemView.setOnClickListener {
             val position = holder.adapterPosition
             if (position != RecyclerView.NO_POSITION) {
                 onItemClick(homeReminderList[position]) // Reminder nesnesini gönder
             }
         }
-
 
         val isCompleted = homeReminderList[position].isCompleted == true
 
@@ -132,7 +133,7 @@ class ReminderAdapter(
 
                 val currentUser = auth.currentUser
 
-                loadingManager.showLoading(context)
+                //loadingManager.showLoading(context)
 
                 if (currentUser == null) {
                     return@setOnCheckedChangeListener
@@ -147,15 +148,15 @@ class ReminderAdapter(
                         .document(reminderId)
                         .update("isCompleted", isChecked)
                         .addOnSuccessListener {
-                            loadingManager.dismissLoading()
+                            //loadingManager.dismissLoading()
                             Toast.makeText(
                                 holder.itemView.context,
                                 "Status updated: $isCompleted",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }.addOnFailureListener {
-                            loadingManager.dismissLoading()
-                            Toast.makeText(holder.itemView.context, "Hata oluştu", Toast.LENGTH_SHORT)
+                            //loadingManager.dismissLoading()
+                            Toast.makeText(holder.itemView.context, "Error occurred", Toast.LENGTH_SHORT)
                                 .show()
                         }
                 } else {
@@ -173,7 +174,7 @@ class ReminderAdapter(
                             ).show()
                         }.addOnFailureListener {
                             loadingManager.dismissLoading()
-                            Toast.makeText(holder.itemView.context, "Hata oluştu", Toast.LENGTH_SHORT)
+                            Toast.makeText(holder.itemView.context, "Error occurred", Toast.LENGTH_SHORT)
                                 .show()
                         }
                 }
@@ -200,9 +201,6 @@ class ReminderAdapter(
 
             }
         }
-
-        // Listener yeniden tanımla
-
     }
 
     private fun updateSwitchColor(holder: ReminderAdapter.ReminderViewHolder, isChecked: Boolean) {
@@ -236,5 +234,168 @@ class ReminderAdapter(
         homeReminderList.clear()
         homeReminderList.addAll(newList)
         diffResult.dispatchUpdatesTo(this)
+    }
+
+    // Silme işlemi için yardımcı fonksiyon
+    fun deleteItem(position: Int) {
+        if (position >= 0 && position < homeReminderList.size) {
+            val reminder = homeReminderList[position]
+            onItemDelete?.invoke(reminder, position)
+        }
+    }
+
+    // Firebase'den silme işlemi
+    fun deleteReminderFromFirebase(reminder: Reminder, position: Int) {
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            Toast.makeText(context, "User login required", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        loadingManager.showLoading(context)
+
+        if (workspaceId == "personalWorkspace") {
+            val userId = currentUser.uid
+            firestore.collection("Users")
+                .document(userId)
+                .collection("workspaces")
+                .document(workspaceId)
+                .collection("reminders")
+                .document(reminder.id)
+                .delete()
+                .addOnSuccessListener {
+                    loadingManager.dismissLoading()
+                    homeReminderList.removeAt(position)
+                    notifyItemRemoved(position)
+                    notifyItemRangeChanged(position, homeReminderList.size)
+                    Toast.makeText(context, "Reminder deleted", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener {
+                    loadingManager.dismissLoading()
+                    Toast.makeText(context, "Deletion failed", Toast.LENGTH_SHORT).show()
+                }
+        } else {
+            firestore.collection("workspaces")
+                .document(workspaceId)
+                .collection("reminders")
+                .document(reminder.id)
+                .delete()
+                .addOnSuccessListener {
+                    loadingManager.dismissLoading()
+                    homeReminderList.removeAt(position)
+                    notifyItemRemoved(position)
+                    notifyItemRangeChanged(position, homeReminderList.size)
+                    Toast.makeText(context, "Reminder deleted", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener {
+                    loadingManager.dismissLoading()
+                    Toast.makeText(context, "Deletion failed", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+
+    // ItemTouchHelper için swipe callback
+    fun getSwipeCallback(): ItemTouchHelper.SimpleCallback {
+        return object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+
+            private val deleteIcon: Drawable = ContextCompat.getDrawable(context, R.drawable.baseline_delete_outline_24_w)!!
+            private val background = ColorDrawable(ContextCompat.getColor(context, R.color.red))
+            private val clearPaint = Paint().apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR) }
+
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                return false
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+
+                // Read-only durumunda silme işlemine izin verme
+                if (isReadOnly == "Read only" && !owner) {
+                    notifyItemChanged(position) // Item'ı eski haline döndür
+                    Toast.makeText(context, "Bu çalışma alanında silme yetkiniz yok", Toast.LENGTH_SHORT).show()
+                    return
+                }
+
+                // Silme onayı için dialog göster
+                showDeleteConfirmationDialog(position)
+            }
+
+            override fun getSwipeThreshold(viewHolder: RecyclerView.ViewHolder): Float {
+                return 0.3f // Swipe için gereken minimum mesafe
+            }
+
+            override fun onChildDraw(
+                c: Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+
+                val itemView = viewHolder.itemView
+                val itemHeight = itemView.height
+                val isCancelled = dX == 0f && !isCurrentlyActive
+
+                if (isCancelled) {
+                    clearCanvas(c, itemView.right + dX, itemView.top.toFloat(), itemView.right.toFloat(), itemView.bottom.toFloat())
+                    super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+                    return
+                }
+
+                // Sadece sola kaydırma (dX < 0) durumunda kırmızı arka plan çiz
+                if (dX < 0) {
+                    background.setBounds(itemView.right + dX.toInt(), itemView.top, itemView.right, itemView.bottom)
+                    background.draw(c)
+
+                    // Silme ikonunu sağda göster
+                    val iconMargin = (itemHeight - deleteIcon.intrinsicHeight) / 2
+                    val iconTop = itemView.top + iconMargin
+                    val iconBottom = iconTop + deleteIcon.intrinsicHeight
+                    val iconRight = itemView.right - iconMargin
+                    val iconLeft = iconRight - deleteIcon.intrinsicWidth
+
+                    deleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                    deleteIcon.draw(c)
+                }
+
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+            }
+
+            private fun clearCanvas(c: Canvas, left: Float, top: Float, right: Float, bottom: Float) {
+                c.drawRect(left, top, right, bottom, clearPaint)
+            }
+        }
+    }
+
+    private fun showDeleteConfirmationDialog(position: Int) {
+        if (position >= homeReminderList.size) {
+            notifyItemChanged(position)
+            return
+        }
+
+        val reminder = homeReminderList[position]
+
+        AlertDialog.Builder(context)
+            .setTitle("Deletion Confirmation")
+            .setMessage("Are you sure you want to delete the reminder '${reminder.title}'?")
+            .setPositiveButton("Delete") { _, _ ->
+                deleteReminderFromFirebase(reminder, position)
+            }
+            .setNegativeButton("Cancel") { _, _ ->
+                // Item'ı eski haline döndür
+                notifyItemChanged(position)
+            }
+            .setOnCancelListener {
+                // Dialog iptal edilirse item'ı eski haline döndür
+                notifyItemChanged(position)
+            }
+            .show()
     }
 }

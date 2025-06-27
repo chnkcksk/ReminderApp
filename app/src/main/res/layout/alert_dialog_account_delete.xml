@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/main_bg_color"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/public_sans_bold"
+        android:text="Delete Account"
+        android:textSize="18sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:fontFamily="@font/public_sans"
+        android:text="Your account and data will be deleted forever. Do you accept?"
+        android:textSize="16sp" />
+
+    <EditText
+        android:id="@+id/customET"
+        style="@style/CustomEditTextStyle"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginTop="20dp"
+        android:hint="Password"
+        android:inputType="textPassword" />
+
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:layout_marginTop="30dp">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/customB"
+            android:layout_marginRight="5dp"
+            style="@style/custom_button_primary"
+            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/customB2"
+            style="@style/custom_button_primary"
+            android:layout_width="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:layout_weight="1"
+            android:backgroundTint="@android:color/darker_gray"
+            android:layout_height="wrap_content"
+            android:text="Cancel" />
+
+
+    </LinearLayout>
+
+
+</LinearLayout>

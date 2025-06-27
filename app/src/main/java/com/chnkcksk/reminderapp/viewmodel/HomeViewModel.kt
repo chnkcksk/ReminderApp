@@ -31,7 +31,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         object ShowLoading : UiEvent()
         object HideLoading : UiEvent()
         data class ShowToast(val message: String) : UiEvent()
-        object GoogleUser : UiEvent()
         data class ReminderList(val reminderList: ArrayList<Reminder>) : UiEvent()
         data class WorkspaceList(val workspaceList: ArrayList<DrawerMenuItem>) : UiEvent()
 
@@ -40,12 +39,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiEvent = MutableSharedFlow<UiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
 
+    private val _isGoogleUser = MutableLiveData<Boolean>()
+    val isGoogleUser : LiveData<Boolean> get() = _isGoogleUser
+
 
 //    private val _reminderList = MutableLiveData<ArrayList<Reminder>>()
 //    val reminderList: LiveData<ArrayList<Reminder>> get() = _reminderList
 //
 //    private val _workspaceList = MutableLiveData<ArrayList<DrawerMenuItem>>()
 //    val workspaceList: LiveData<ArrayList<DrawerMenuItem>> get() = _workspaceList
+
 
 
     fun getUserProviderData() {
@@ -63,14 +66,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             currentUser.providerData.forEach { profile ->
                 if (profile.providerId == "google.com") {
                     //Bu veri gonderilince fragmentta googleuser degeri true olacak
-                    _uiEvent.emit(UiEvent.GoogleUser)
+                    _isGoogleUser.value = true
                 }
             }
         }
 
 
     }
-
 
     fun loadRemindersList() {
 
@@ -79,12 +81,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
             val currentUser = auth.currentUser
 
-            _uiEvent.emit(UiEvent.ShowLoading)
+
 
             if (currentUser == null) {
                 _uiEvent.emit(UiEvent.ShowToast("Error"))
                 return@launch
             }
+
+            _uiEvent.emit(UiEvent.ShowLoading)
 
             try {
 
@@ -140,52 +144,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
             }
 
-            /*
-            firestore.collection("Users")
-                .document(currentUser.uid)
-                .collection("workspaces")
-                .document("personalWorkspace")
-                .collection("reminders")
-                .get()
-                .addOnSuccessListener { documents ->
-                    val reminderList = ArrayList<Reminder>()
-
-                    documents.forEach { document ->
-                        val reminder = Reminder(
-                            id = document.id,
-                            title = document.getString("title") ?: "",
-                            description = document.getString("description") ?: "",
-                            isCompleted = document.getBoolean("isCompleted") ?: false,
-                            timestamp = document.get("timestamp").toString() ?: "",
-                            priority = document.getString("priority") ?: "",
-                            date = document.getString("date") ?: "",
-                            time = document.getString("time") ?: "",
-                            reminder = document.getBoolean("reminder") ?: false
-                        )
-                        reminderList.add(reminder)
-                    }
-                    reminderList.sortByDescending { reminder ->
-                        try {
-                            reminder.timestamp.toLong()
-                        } catch (e: Exception) {
-                            0L // hata durumunda varsayılan değer
-                        }
-                    }
-
-                    _reminderList.value = reminderList
-                    _isLoading.value = false
-
-                }.addOnFailureListener { e ->
-                    _isLoading.value = false
-                    _toastMessage.value = e.toString()
-                }
-
-             */
         }
 
     }
-
-
 
     fun loadWorkspaces() {
 

@@ -183,6 +183,7 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                             ownerId = doc.getString("ownerId") ?: ""
                         )
                     )
+
                     _uiEvent.emit(UiEvent.HideLoading)
 
                 } catch (e: Exception) {
@@ -231,7 +232,8 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         editedWorkspaceName: String,
         wT: String,
         eT: String,
-        kickOthers: Boolean
+        kickOthers: Boolean,
+        deleteMessages:Boolean
     ) {
 
         viewModelScope.launch {
@@ -248,10 +250,9 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             _uiEvent.emit(UiEvent.ShowLoading)
 
 
-
             try {
 
-                if (kickOthers == true) {
+                if (kickOthers == true && deleteMessages == true) {
                     // Önce mevcut üyeleri çekiyoruz
                     val document = firestore.collection("workspaces")
                         .document(workspaceId)
@@ -276,6 +277,22 @@ class EditWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                         .document(workspaceId)
                         .update(updatedData)
                         .await()
+
+
+                    //Mesajlari silme islemi
+                    val messagesRef = firestore.collection("workspaces")
+                        .document(workspaceId)
+                        .collection("messages")
+
+                    try {
+                        val snapshot = messagesRef.get().await()
+                        for (document in snapshot.documents){
+                            messagesRef.document(document.id).delete().await()
+                        }
+                    }catch (e:Exception){
+                        _uiEvent.emit(UiEvent.ShowToast("Error: ${e.message}"))
+                    }
+
 
                     _uiEvent.emit(UiEvent.WorkspaceEdited)
 

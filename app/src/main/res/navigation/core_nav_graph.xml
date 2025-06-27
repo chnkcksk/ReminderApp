@@ -202,6 +202,10 @@
         tools:layout="@layout/fragment_password_change" >
         <action
             android:id="@+id/action_passwordChangeFragment_to_homeFragment"
+            app:enterAnim="@animator/nav_default_enter_anim"
+            app:exitAnim="@animator/nav_default_exit_anim"
+            app:popEnterAnim="@animator/nav_default_pop_enter_anim"
+            app:popExitAnim="@animator/nav_default_pop_exit_anim"
             app:destination="@id/homeFragment" />
     </fragment>
     <fragment
@@ -211,6 +215,10 @@
         tools:layout="@layout/fragment_app_preferences" >
         <action
             android:id="@+id/action_appPreferencesFragment_to_homeFragment"
+            app:enterAnim="@animator/nav_default_enter_anim"
+            app:exitAnim="@animator/nav_default_exit_anim"
+            app:popEnterAnim="@animator/nav_default_pop_enter_anim"
+            app:popExitAnim="@animator/nav_default_pop_exit_anim"
             app:destination="@id/homeFragment" />
     </fragment>
     <fragment
@@ -220,6 +228,10 @@
         tools:layout="@layout/fragment_chat" >
         <action
             android:id="@+id/action_chatFragment_to_otherWorkspaceFragment"
+            app:enterAnim="@animator/nav_default_enter_anim"
+            app:exitAnim="@animator/nav_default_exit_anim"
+            app:popEnterAnim="@animator/nav_default_pop_enter_anim"
+            app:popExitAnim="@animator/nav_default_pop_exit_anim"
             app:destination="@id/otherWorkspaceFragment" />
         <argument
             android:name="workspaceId"

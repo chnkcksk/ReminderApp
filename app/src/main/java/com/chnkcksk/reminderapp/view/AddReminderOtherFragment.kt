@@ -17,6 +17,7 @@ import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentAddReminderBinding
 import com.chnkcksk.reminderapp.databinding.FragmentAddReminderOtherBinding
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.NetworkHelper
 import com.chnkcksk.reminderapp.viewmodel.AddReminderOtherViewModel
 import com.chnkcksk.reminderapp.viewmodel.EditReminderViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -64,6 +65,9 @@ class AddReminderOtherFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (!NetworkHelper.isInternetAvailable(requireContext())) {
+            NetworkHelper.showNoInternetDialog(requireContext(), requireView(), requireActivity())
+        }
 
         viewModel.getDatas(workspaceId)
         setupDateAndTimePicker()

@@ -34,6 +34,7 @@ class OtherWorkspaceViewModel(application: Application) : AndroidViewModel(appli
 
         data class WorkspaceInformations(
             val workspaceName: String,
+            val workspaceType: String,
             val editableType: String,
             val ownerId: String
         ) : UiEvent()
@@ -81,6 +82,7 @@ class OtherWorkspaceViewModel(application: Application) : AndroidViewModel(appli
                 _uiEvent.emit(UiEvent.WorkspaceInformations(
                     ownerId = doc.getString("ownerId") ?: "",
                     editableType = doc.getString("editableType") ?: "",
+                    workspaceType = doc.getString("workspaceType") ?: "",
                     workspaceName = doc.getString("workspaceName") ?: ""
                 ))
 

@@ -1,26 +1,52 @@
 package com.chnkcksk.reminderapp.view
 
+import android.app.Activity
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
+import com.chnkcksk.reminderapp.MainNavGraphDirections
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentAppPreferencesBinding
 import com.chnkcksk.reminderapp.permissions.NotificationPermissionManager
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.NetworkHelper
+import com.chnkcksk.reminderapp.viewmodel.HomeViewModel.UiEvent
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 
 class AppPreferencesFragment : Fragment() {
@@ -37,6 +63,10 @@ class AppPreferencesFragment : Fragment() {
 
     // Switch değişikliğini programatik olarak kontrol etmek için
     private var isUpdatingSwitch = false
+
+    private lateinit var googleSignInClient: GoogleSignInClient
+    private lateinit var googleReauthLauncher: ActivityResultLauncher<Intent>
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,8 +89,56 @@ class AppPreferencesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (!NetworkHelper.isInternetAvailable(requireContext())) {
+            NetworkHelper.showNoInternetDialog(requireContext(), requireView(), requireActivity())
+        }
+
         setupButtons()
         updateSwitchState()
+        reAuthLauncher()
+    }
+
+    private fun reAuthLauncher(){
+        googleReauthLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                try {
+                    val account = task.getResult(ApiException::class.java)
+                    val idToken = account.idToken
+
+                    val credential = GoogleAuthProvider.getCredential(idToken, null)
+                    val currentUser = Firebase.auth.currentUser
+
+                    if (currentUser != null) {
+                        loadingManager.showLoading(requireContext())
+                        currentUser.reauthenticate(credential)
+                            .addOnSuccessListener {
+                                lifecycleScope.launch {
+                                    try {
+                                        loadingManager.showLoading(requireContext())
+                                        deleteUserDataAndOwnedWorkspaces(currentUser.uid)
+                                        currentUser.delete().await()
+                                        loadingManager.dismissLoading()
+                                        Toast.makeText(requireContext(), "Account deleted!", Toast.LENGTH_LONG).show()
+                                        Firebase.auth.signOut()
+                                        goWelcome()
+                                    } catch (e: Exception) {
+                                        loadingManager.dismissLoading()
+                                        Toast.makeText(requireContext(), "Delete failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+
+                            }
+                            .addOnFailureListener {
+                                loadingManager.dismissLoading()
+                                Toast.makeText(requireContext(), "Reauthentication failed!", Toast.LENGTH_LONG).show()
+                            }
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), "Google Sign-in failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     override fun onResume() {
@@ -86,6 +164,10 @@ class AppPreferencesFragment : Fragment() {
             }
         }
 
+        binding.deleteAccountButton.setOnClickListener {
+            showDeleteDialog()
+        }
+
         binding.backButton.setOnClickListener {
             goBack()
         }
@@ -101,6 +183,171 @@ class AppPreferencesFragment : Fragment() {
                 }
             })
     }
+
+    private fun showDeleteDialog(){
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.alert_dialog_account_delete, null)
+
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setView(dialogView)
+        val alertDialog = builder.create()
+
+// View'lara erişim
+        val customET = dialogView.findViewById<EditText>(R.id.customET)
+        val customB = dialogView.findViewById<AppCompatButton>(R.id.customB)
+        val customB2 = dialogView.findViewById<AppCompatButton>(R.id.customB2)
+
+        customET.isVisible = false
+        customB.isEnabled = false
+
+        customB.text = "3"
+
+
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            customB.text = "2"
+        }, 1000)
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            customB.text = "1"
+        }, 2000)
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            customB.text = "Delete"
+            customB.isEnabled = true
+        }, 3000)
+
+
+
+        val currentUser = auth.currentUser
+
+        if (currentUser==null){
+            Toast.makeText(requireContext(), "Error!", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        var isGoogleUser = false
+
+        currentUser.providerData.forEach { profile ->
+            if (profile.providerId == "google.com") {
+                isGoogleUser = true
+            }
+        }
+
+        customET.isVisible = !isGoogleUser
+
+        customB2.setOnClickListener {
+            alertDialog.dismiss()
+        }
+
+        customB.setOnClickListener {
+            val currentUser = Firebase.auth.currentUser ?: return@setOnClickListener
+
+            if (!isGoogleUser) {
+                val passw = customET.text.toString()
+                if (passw.isEmpty()) {
+                    Toast.makeText(requireContext(), "Please fill password!", Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+
+                val email = currentUser.email
+                if (email == null) {
+                    Toast.makeText(requireContext(), "Error!", Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+
+                loadingManager.showLoading(requireContext())
+                val credential = EmailAuthProvider.getCredential(email, passw)
+
+                currentUser.reauthenticate(credential).addOnCompleteListener { reauthTask ->
+                    if (reauthTask.isSuccessful) {
+                        lifecycleScope.launch {
+                            try {
+                                loadingManager.showLoading(requireContext())
+                                deleteUserDataAndOwnedWorkspaces(currentUser.uid)
+                                currentUser.delete().await()
+                                loadingManager.dismissLoading()
+                                Toast.makeText(requireContext(), "Account deleted!", Toast.LENGTH_LONG).show()
+                                Firebase.auth.signOut()
+                                goWelcome()
+                            } catch (e: Exception) {
+                                loadingManager.dismissLoading()
+                                Toast.makeText(requireContext(), "Delete failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+
+
+                    } else {
+                        loadingManager.dismissLoading()
+                        Toast.makeText(requireContext(), "Reauthentication failed!", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } else {
+                val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                    .requestIdToken(getString(R.string.default_web_client_id))
+                    .requestEmail()
+                    .build()
+
+                googleSignInClient = GoogleSignIn.getClient(requireActivity(), gso)
+                val signInIntent = googleSignInClient.signInIntent
+                googleReauthLauncher.launch(signInIntent)
+            }
+
+            alertDialog.dismiss()
+        }
+
+
+        alertDialog.show()
+
+    }
+
+    suspend fun deleteUserDataAndOwnedWorkspaces(uid: String) {
+        val firestore = Firebase.firestore
+
+        try {
+            // 1. reminders alt koleksiyonundaki belgeleri sil
+            val remindersRef = firestore
+                .collection("Users")
+                .document(uid)
+                .collection("workspaces")
+                .document("personalWorkspace")
+                .collection("reminders")
+
+            val reminderDocs = remindersRef.get().await()
+            for (doc in reminderDocs.documents) {
+                remindersRef.document(doc.id).delete().await()
+            }
+
+            // 2. personalWorkspace dokümanını sil
+            firestore.collection("Users")
+                .document(uid)
+                .collection("workspaces")
+                .document("personalWorkspace")
+                .delete()
+                .await()
+
+            // 3. Users/userId dokümanını sil
+            firestore.collection("Users").document(uid).delete().await()
+
+            // 4. workspaces koleksiyonundaki ownerId eşleşen belgeleri sil
+            val ownedWorkspaces = firestore
+                .collection("workspaces")
+                .whereEqualTo("ownerId", uid)
+                .get()
+                .await()
+
+            for (doc in ownedWorkspaces.documents) {
+                firestore.collection("workspaces").document(doc.id).delete().await()
+            }
+
+        } catch (e: Exception) {
+            // Eğer hata yönetmek istersen buraya log veya throw koyabilirsin
+            Toast.makeText(requireContext(), "Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            throw e
+        }
+    }
+
+
+
 
     private fun updateSwitchState() {
         context?.let { ctx ->
@@ -278,6 +525,11 @@ class AppPreferencesFragment : Fragment() {
 
     private fun goBack(){
         val action=AppPreferencesFragmentDirections.actionAppPreferencesFragmentToHomeFragment()
+        Navigation.findNavController(requireView()).navigate(action)
+    }
+
+    private fun goWelcome(){
+        val action = MainNavGraphDirections.actionDeleteToWelcome()
         Navigation.findNavController(requireView()).navigate(action)
     }
 

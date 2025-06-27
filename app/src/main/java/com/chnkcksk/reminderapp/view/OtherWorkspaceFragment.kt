@@ -11,6 +11,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.adapter.ReminderAdapter
@@ -18,6 +19,7 @@ import com.chnkcksk.reminderapp.databinding.FragmentAddWorkspaceBinding
 import com.chnkcksk.reminderapp.databinding.FragmentOtherWorkspaceBinding
 import com.chnkcksk.reminderapp.model.Reminder
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.NetworkHelper
 import com.chnkcksk.reminderapp.viewmodel.OtherWorkspaceViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -41,6 +43,7 @@ class OtherWorkspaceFragment : Fragment() {
 
     private lateinit var ownerId: String
     private lateinit var editableType: String
+    private lateinit var workspaceType: String
 
     private var isWorkspaceNameLoaded = false
     private var isEditableTypeLoaded = false
@@ -74,7 +77,13 @@ class OtherWorkspaceFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (!NetworkHelper.isInternetAvailable(requireContext())) {
+            NetworkHelper.showNoInternetDialog(requireContext(), requireView(), requireActivity())
+        }
+
         binding.otherAddFAB.isVisible = false
+        binding.chatButton.isVisible = false
+
 
 
         //veriuleri cektigimiz fonksiyon
@@ -88,6 +97,11 @@ class OtherWorkspaceFragment : Fragment() {
     }
 
     private fun checkAndSetupReminders() {
+
+        if (workspaceType.isNotEmpty() && workspaceType.equals("Group")) {
+            binding.chatButton.isVisible = true
+        }
+
         if (isEditableTypeLoaded && isOwnerIdLoaded && isWorkspaceNameLoaded) {
             setupOtherReminders()
             if (editableType == "Read only" && ownerId != auth.currentUser?.uid) {
@@ -113,33 +127,43 @@ class OtherWorkspaceFragment : Fragment() {
         }
 
         reminderAdapter = ReminderAdapter(
-            requireContext(),
-            workspaceId,
-            editableType,
-            owner,
-            ArrayList()
-        ) { reminder ->
-            // editableType = "read-only" ve ownerId != currentUserId ise tıklanamaz
-            if (editableType == "Read only" && ownerId != auth.currentUser?.uid) {
-                Toast.makeText(
-                    requireContext(),
-                    "Bu workspace sadece görüntülenebilir.",
-                    Toast.LENGTH_SHORT
-                ).show()
+            context = requireContext(),
+            workspaceId = workspaceId,
+            isReadOnly = editableType,
+            owner = owner,
+            homeReminderList = ArrayList(),
+            onItemClick = { reminder ->
+                // editableType = "read-only" ve ownerId != currentUserId ise tıklanamaz
+                if (editableType == "Read only" && ownerId != auth.currentUser?.uid) {
+                    Toast.makeText(
+                        requireContext(),
+                        "This workspace can only be viewed.",
+                        Toast.LENGTH_SHORT
+                    ).show()
 
-            } else {
-                val reminderId = reminder.id
-                val action =
-                    OtherWorkspaceFragmentDirections.actionOtherWorkspaceFragmentToEditReminderOtherFragment(
-                        workspaceId,
-                        reminderId
-                    )
-                Navigation.findNavController(requireView()).navigate(action)
+                } else {
+                    val reminderId = reminder.id
+                    val action =
+                        OtherWorkspaceFragmentDirections.actionOtherWorkspaceFragmentToEditReminderOtherFragment(
+                            workspaceId,
+                            reminderId
+                        )
+                    Navigation.findNavController(requireView()).navigate(action)
+                }
+            },
+            onItemDelete = { reminder, position ->
+                // İsteğe bağlı: Silme işlemi için ek callback
+                // Bu callback opsiyonel, adapter kendi Firebase silme işlemini hallediyor
             }
-        }
+
+        )
 
         binding.otherWorkspaceRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.otherWorkspaceRecyclerView.adapter = reminderAdapter
+
+        // ItemTouchHelper'ı oluştur ve RecyclerView'e bağla
+        val itemTouchHelper = ItemTouchHelper(reminderAdapter.getSwipeCallback())
+        itemTouchHelper.attachToRecyclerView(binding.otherWorkspaceRecyclerView)
 
     }
 
@@ -149,8 +173,11 @@ class OtherWorkspaceFragment : Fragment() {
             goBack()
         }
 
-        binding.chatButton.setOnClickListener{
-            val action = OtherWorkspaceFragmentDirections.actionOtherWorkspaceFragmentToChatFragment(workspaceId)
+        binding.chatButton.setOnClickListener {
+            val action =
+                OtherWorkspaceFragmentDirections.actionOtherWorkspaceFragmentToChatFragment(
+                    workspaceId
+                )
             Navigation.findNavController(requireView()).navigate(action)
         }
 
@@ -218,6 +245,8 @@ class OtherWorkspaceFragment : Fragment() {
                     is OtherWorkspaceViewModel.UiEvent.NavigateHome -> goBack()
                     is OtherWorkspaceViewModel.UiEvent.WorkspaceInformations -> {
 
+                        workspaceType = event.workspaceType
+
                         binding.workspaceNameTV.text = event.workspaceName
                         isWorkspaceNameLoaded = true
                         checkAndSetupReminders()
@@ -231,6 +260,7 @@ class OtherWorkspaceFragment : Fragment() {
                         checkAndSetupReminders()
 
                     }
+
                     is OtherWorkspaceViewModel.UiEvent.ReminderList -> {
                         reminderList.clear()
                         reminderList.addAll(event.reminderList)

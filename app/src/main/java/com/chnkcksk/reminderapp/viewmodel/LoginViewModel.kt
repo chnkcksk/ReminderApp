@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlin.random.Random
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -125,11 +126,12 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             if (!document.exists()) {
                 // Yeni kullanıcı, Firestore'a kaydet
                 Log.d("LoginViewModel", "Creating new user in Firestore")
+
                 val userMap = hashMapOf(
                     "email" to user.email,
                     "name" to user.displayName,
                     "emailVerified" to true // Google hesapları zaten doğrulanmış
-                )
+                    )
 
                 firestore.collection("Users")
                     .document(uid)

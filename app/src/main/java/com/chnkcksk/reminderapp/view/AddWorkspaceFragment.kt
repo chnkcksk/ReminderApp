@@ -5,32 +5,36 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.SoundPool
 import android.os.Bundle
 import android.view.Gravity
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentAddWorkspaceBinding
-import com.chnkcksk.reminderapp.databinding.FragmentHomeBinding
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.NetworkHelper
 import com.chnkcksk.reminderapp.util.SuccessDialog
 import com.chnkcksk.reminderapp.viewmodel.AddWorkspaceViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -50,6 +54,10 @@ class AddWorkspaceFragment : Fragment() {
     private lateinit var typedJoinCode: String
     private lateinit var workspaceId: String
 
+//    private lateinit var soundPool: SoundPool
+//    private var soundId: Int = 0
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -67,12 +75,25 @@ class AddWorkspaceFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (!NetworkHelper.isInternetAvailable(requireContext())) {
+            NetworkHelper.showNoInternetDialog(requireContext(), requireView(), requireActivity())
+        }
 
         setupObserves()
+        ViewCompat.setOnApplyWindowInsetsListener(view) { v, insets ->
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val navInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+
+            // Yalnızca alt boşluk uygula (klavye için)
+            v.setPadding(0, 0, 0, imeInsets.bottom)
+            insets
+        }
+
 
         setupInvisible()
         setupSpinners()
         setupButtons()
+        //setupSoundPool()
     }
 
 
@@ -112,19 +133,20 @@ class AddWorkspaceFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.uiEvent.collect { event ->
                 when (event) {
-                    is AddWorkspaceViewModel.UiEvent.WorkspaceJoined ->{
+                    is AddWorkspaceViewModel.UiEvent.WorkspaceJoined -> {
                         loadingManager.dismissLoading {
-                            successDialog.showSuccessDialog(requireContext()){
+                            //soundPool.play(soundId, 1f, 1f, 1, 0, 1f)
+                            successDialog.showSuccessDialog(requireContext()) {
                                 //joincode
-
                                 navigateNewWorkspace()
                             }
                         }
                     }
 
-                    is AddWorkspaceViewModel.UiEvent.WorkspaceCreated ->{
+                    is AddWorkspaceViewModel.UiEvent.WorkspaceCreated -> {
                         loadingManager.dismissLoading {
-                            successDialog.showSuccessDialog(requireContext()){
+                            //soundPool.play(soundId, 1f, 1f, 1, 0, 1f)
+                            successDialog.showSuccessDialog(requireContext()) {
                                 //BuildDialog
                                 buildJoinCodeDialog()
 
@@ -133,11 +155,18 @@ class AddWorkspaceFragment : Fragment() {
                         }
                     }
 
-                    is AddWorkspaceViewModel.UiEvent.ShowLoading -> loadingManager.showLoading(requireContext())
-                    is AddWorkspaceViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
-                    is AddWorkspaceViewModel.UiEvent.ShowToast -> Toast.makeText(requireContext(), event.message, Toast.LENGTH_LONG).show()
+                    is AddWorkspaceViewModel.UiEvent.ShowLoading -> loadingManager.showLoading(
+                        requireContext()
+                    )
 
-                    is AddWorkspaceViewModel.UiEvent.WorkspaceInformation ->{
+                    is AddWorkspaceViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
+                    is AddWorkspaceViewModel.UiEvent.ShowToast -> Toast.makeText(
+                        requireContext(),
+                        event.message,
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    is AddWorkspaceViewModel.UiEvent.WorkspaceInformation -> {
                         joinCode = event.joinCode
                         workspaceId = event.workspaceId
                     }
@@ -149,7 +178,7 @@ class AddWorkspaceFragment : Fragment() {
 
     }
 
-    private fun navigateNewWorkspace(){
+    private fun navigateNewWorkspace() {
         val action =
             AddWorkspaceFragmentDirections.actionAddWorkspaceFragmentToOtherWorkspaceFragment(
                 workspaceId
@@ -157,7 +186,7 @@ class AddWorkspaceFragment : Fragment() {
         Navigation.findNavController(requireView()).navigate(action)
     }
 
-    private fun buildJoinCodeDialog(){
+    private fun buildJoinCodeDialog() {
         val workspaceSelectedType = binding.workspaceTypeSpinner.selectedItem
 
         if (workspaceSelectedType == "Group") {
@@ -223,6 +252,25 @@ class AddWorkspaceFragment : Fragment() {
         }
     }
 
+    /*
+    private fun setupSoundPool() {
+
+        // SoundPool yapılandırması
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_GAME)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+
+        soundPool = SoundPool.Builder()
+            .setMaxStreams(1) // Aynı anda kaç ses çalınabileceği
+            .setAudioAttributes(audioAttributes)
+            .build()
+
+        soundId = soundPool.load(requireContext(), R.raw.success_sound, 1)
+
+    }
+
+     */
 
 
     private fun setupButtons() {
@@ -302,6 +350,7 @@ class AddWorkspaceFragment : Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
+        requireActivity().window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
         _binding = null
     }
 

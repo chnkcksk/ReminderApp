@@ -28,6 +28,7 @@ import com.chnkcksk.reminderapp.databinding.FragmentEditReminderBinding
 import com.chnkcksk.reminderapp.databinding.FragmentHomeBinding
 import com.chnkcksk.reminderapp.permissions.NotificationPermissionManager
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.NetworkHelper
 import com.chnkcksk.reminderapp.viewmodel.EditReminderViewModel
 import com.chnkcksk.reminderapp.worker.WorkerNotification
 import com.google.firebase.auth.FirebaseAuth
@@ -84,6 +85,9 @@ class EditReminderFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (!NetworkHelper.isInternetAvailable(requireContext())) {
+            NetworkHelper.showNoInternetDialog(requireContext(), requireView(), requireActivity())
+        }
 
         viewModel.loadReminderData(workspaceId, reminderId)
 
@@ -262,7 +266,7 @@ class EditReminderFragment : Fragment() {
             channelId = "main_channel",
             channelName = "Home Page Notifications",
             channelDescription = "Home page custom notifications",
-            iconResId = android.R.drawable.ic_dialog_info,
+            iconResId = R.mipmap.ic_launcher,
             autoCancel = true,
             priority = NotificationCompat.PRIORITY_HIGH,
             vibrate = true,
@@ -280,7 +284,7 @@ class EditReminderFragment : Fragment() {
                 override fun onPermissionDenied() {
                     Toast.makeText(
                         requireContext(),
-                        "Ana sayfa bildirimi gönderilemedi",
+                        "Failed to send home page notification",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -323,7 +327,7 @@ class EditReminderFragment : Fragment() {
 
         Toast.makeText(
             requireContext(),
-            "Bildirim ${binding.editReminderDate.text} tarihinde ${binding.editReminderTime.text} saatinde ayarlandi!",
+            "The notification is set on ${binding.editReminderDate.text} at time ${binding.editReminderTime.text}!",
             Toast.LENGTH_SHORT
         ).show()
 

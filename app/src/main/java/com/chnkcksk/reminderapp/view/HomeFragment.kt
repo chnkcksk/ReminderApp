@@ -30,6 +30,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.chnkcksk.reminderapp.MainNavGraphDirections
@@ -42,7 +43,9 @@ import com.chnkcksk.reminderapp.databinding.NavDrawerHeaderBinding
 import com.chnkcksk.reminderapp.model.DrawerMenuItem
 import com.chnkcksk.reminderapp.model.Reminder
 import com.chnkcksk.reminderapp.permissions.NotificationPermissionManager
+import com.chnkcksk.reminderapp.util.AuthManager
 import com.chnkcksk.reminderapp.util.LoadingManager
+import com.chnkcksk.reminderapp.util.NetworkHelper
 import com.chnkcksk.reminderapp.viewmodel.HomeViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -71,7 +74,6 @@ class HomeFragment : Fragment() {
     private val loadingManager = LoadingManager.getInstance()
     private val viewModel: HomeViewModel by viewModels()
 
-    private var isGoogleUser = false
     private var reminderList = ArrayList<Reminder>()
     private var workspaceList = ArrayList<DrawerMenuItem>()
 
@@ -80,8 +82,7 @@ class HomeFragment : Fragment() {
     // Bildirim izni için NotificationPermissionManager
     private lateinit var permissionManager: NotificationPermissionManager
 
-    private lateinit var sharedPref : SharedPreferences
-
+    private lateinit var sharedPref: SharedPreferences
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,9 +108,17 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-
+        if (!NetworkHelper.isInternetAvailable(requireContext())) {
+            NetworkHelper.showNoInternetDialog(requireContext(), requireView(), requireActivity())
+        }else{
+            if (auth.currentUser == null){
+                signOut()
+            }
+        }
 
         viewModel.getUserProviderData()
+
+
 
 
 
@@ -161,7 +170,6 @@ class HomeFragment : Fragment() {
     }
 
 
-
     private fun setupObserves() {
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.uiEvent.collect { event ->
@@ -177,7 +185,6 @@ class HomeFragment : Fragment() {
                         Toast.LENGTH_LONG
                     ).show()
 
-                    is HomeViewModel.UiEvent.GoogleUser -> isGoogleUser = true
 
                     is HomeViewModel.UiEvent.ReminderList -> {
                         reminderList.clear()
@@ -224,26 +231,39 @@ class HomeFragment : Fragment() {
 
 
         reminderAdapter = ReminderAdapter(
-            requireContext(),
-            "personalWorkspace",
-            "Editable",
-            true,
-            ArrayList()
-        ) { reminder ->
+            context = requireContext(),
+            workspaceId = "personalWorkspace",
+            isReadOnly = "Editable",
+            owner = true,
+            homeReminderList = ArrayList(),
 
-            // Fragment burada kontrolü eline alıyor
-            val workspaceId = "personalWorkspace" // Eğer bu sabitse
-            val reminderId = reminder.id
+            onItemClick = { reminder ->
 
-            val action = HomeFragmentDirections.actionHomeFragmentToEditReminderFragment(
-                workspaceId,
-                reminderId
-            )
-            Navigation.findNavController(requireView()).navigate(action)
+                // Fragment burada kontrolü eline alıyor
+                val workspaceId = "personalWorkspace" // Eğer bu sabitse
+                val reminderId = reminder.id
 
-        }
+                val action = HomeFragmentDirections.actionHomeFragmentToEditReminderFragment(
+                    workspaceId,
+                    reminderId
+                )
+                Navigation.findNavController(requireView()).navigate(action)
+
+            },
+
+            onItemDelete = { reminder, position ->
+                // İsteğe bağlı: Silme işlemi için ek callback
+                // Bu callback opsiyonel, adapter kendi Firebase silme işlemini hallediyor
+            }
+
+        )
+
         binding.homeRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.homeRecyclerView.adapter = reminderAdapter
+
+        // ItemTouchHelper'ı oluştur ve RecyclerView'e bağla
+        val itemTouchHelper = ItemTouchHelper(reminderAdapter.getSwipeCallback())
+        itemTouchHelper.attachToRecyclerView(binding.homeRecyclerView)
 
         setupSpinner()
 
@@ -318,6 +338,7 @@ class HomeFragment : Fragment() {
         viewModel.loadWorkspaces()
 
 
+
         // Header setup
         val headerBinding = NavDrawerHeaderBinding.bind(binding.navHeader.root)
         headerBinding.userNameText.text = userName
@@ -353,8 +374,8 @@ class HomeFragment : Fragment() {
         }
 
 
-        if (isGoogleUser == true) {
-            contentBinding.passwordChangeButton.isVisible = false
+        viewModel.isGoogleUser.observe(viewLifecycleOwner) { isGoogle ->
+            contentBinding.passwordChangeButton.isVisible = !isGoogle
         }
 
 
@@ -366,11 +387,7 @@ class HomeFragment : Fragment() {
         // Workspace adapter'ını boş DrawerMenuItem listesi ile başlat
         drawerMenuAdapter = DrawerMenuAdapter(ArrayList<DrawerMenuItem>()) { item ->
             // Workspace item'a tıklandığında yapılacak işlemler
-            Toast.makeText(
-                requireContext(),
-                "Selected workspace: ${item.title}",
-                Toast.LENGTH_SHORT
-            ).show()
+            // Toast.makeText(requireContext(), "Selected workspace: ${item.title}", Toast.LENGTH_SHORT).show()
 
             val action = HomeFragmentDirections.actionHomeFragmentToOtherWorkspaceFragment(item.id)
             Navigation.findNavController(requireView()).navigate(action)

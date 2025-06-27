@@ -217,10 +217,11 @@
             android:id="@+id/editWorkspaceButton"
             style="@style/custom_button_primary"
             android:layout_width="match_parent"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginTop="60dp"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginVertical="60dp"
             android:text="Edit"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/personListTV" />

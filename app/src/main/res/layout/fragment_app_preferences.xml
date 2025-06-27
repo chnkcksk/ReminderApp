@@ -61,5 +61,23 @@
             android:layout_height="wrap_content"/>
 
     </LinearLayout>
+    <View
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:layout_weight="1"/>
+
+
+    <TextView
+        android:id="@+id/deleteAccountButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        android:layout_gravity="center"
+        android:fontFamily="@font/public_sans"
+        android:textSize="16sp"
+        android:text="Delete Account"/>
 
 </LinearLayout>
