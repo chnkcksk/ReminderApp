@@ -13,11 +13,10 @@
         <!-- SplashScreen temasını belirt -->
         <item name="android:windowSplashScreenBackground" tools:ignore="NewApi">#FEF4E0</item>
         <!-- (Opsiyonel) Splash ekran logosu -->
-        <item name="android:windowSplashScreenAnimatedIcon" tools:ignore="NewApi">@mipmap/ic_launcher</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:ignore="NewApi">@drawable/reminder_app_icon_resized</item>
         <item name="android:windowSplashScreenIconBackgroundColor" tools:ignore="NewApi">#FEF4E0</item>
     </style>
 
     <style name="Theme.ReminderApp" parent="Base.Theme.ReminderApp" />
-
 
 </resources>

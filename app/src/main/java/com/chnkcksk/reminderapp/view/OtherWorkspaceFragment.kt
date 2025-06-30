@@ -247,6 +247,8 @@ class OtherWorkspaceFragment : Fragment() {
 
                         workspaceType = event.workspaceType
 
+                        binding.workspaceTypeTV.text = "$workspaceType Workspace"
+
                         binding.workspaceNameTV.text = event.workspaceName
                         isWorkspaceNameLoaded = true
                         checkAndSetupReminders()

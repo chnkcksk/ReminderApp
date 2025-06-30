@@ -14,6 +14,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.collection.emptyScatterSet
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.view.isVisible
@@ -53,6 +54,9 @@ class EditWorkspaceFragment : Fragment() {
     private val viewModel: EditWorkspaceViewModel by viewModels()
 
     private var isPersonal: Boolean = false
+
+    private var guest: Boolean = false
+    private var owner: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -197,16 +201,18 @@ class EditWorkspaceFragment : Fragment() {
                             }
                         }
                     }
-                    is EditWorkspaceViewModel.UiEvent.WorkspaceDeleted ->{
+
+                    is EditWorkspaceViewModel.UiEvent.WorkspaceDeleted -> {
                         loadingManager.dismissLoading {
-                            successDialog.showSuccessDialog(requireContext()){
+                            successDialog.showSuccessDialog(requireContext()) {
                                 goHome()
                             }
                         }
                     }
-                    is EditWorkspaceViewModel.UiEvent.WorkspaceEdited ->{
-                        loadingManager.dismissLoading{
-                            successDialog.showSuccessDialog(requireContext()){
+
+                    is EditWorkspaceViewModel.UiEvent.WorkspaceEdited -> {
+                        loadingManager.dismissLoading {
+                            successDialog.showSuccessDialog(requireContext()) {
                                 goBack()
                             }
                         }
@@ -218,7 +224,11 @@ class EditWorkspaceFragment : Fragment() {
                     )
 
                     is EditWorkspaceViewModel.UiEvent.HideLoading -> loadingManager.dismissLoading()
-                    is EditWorkspaceViewModel.UiEvent.ShowToast -> Toast.makeText(requireContext(), event.message, Toast.LENGTH_LONG).show()
+                    is EditWorkspaceViewModel.UiEvent.ShowToast -> Toast.makeText(
+                        requireContext(),
+                        event.message,
+                        Toast.LENGTH_LONG
+                    ).show()
 
                     is EditWorkspaceViewModel.UiEvent.MembersList -> {
                         val formattedText =
@@ -251,11 +261,11 @@ class EditWorkspaceFragment : Fragment() {
                             val userId = currentUser.uid
 
                             if (event.ownerId != userId) {
-
+                                guest = true
                                 setupToGuest()
                             } else {
                                 setupToOwner()
-
+                                owner = true
                             }
 
                         }
@@ -268,7 +278,6 @@ class EditWorkspaceFragment : Fragment() {
                         binding.editWorkspaceEditableSpinner.setSelection(selectedIndexEditableType)
 
                     }
-
 
 
                 }
@@ -294,7 +303,7 @@ class EditWorkspaceFragment : Fragment() {
 
     }
 
-    private fun cancelEditAndGoBack() {
+    private fun cancelEditAlert() {
         androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.MyDialogTheme)
             .setTitle("Are you sure?")
             .setMessage("Are you sure you want to cancel the edit and leave?")
@@ -320,7 +329,12 @@ class EditWorkspaceFragment : Fragment() {
 
     private fun setupButtons() {
         binding.backButton.setOnClickListener {
-            cancelEditAndGoBack()
+            if (guest== true){
+                goBack()
+            }else{
+                cancelEditAlert()
+            }
+
         }
 
 
@@ -355,13 +369,16 @@ class EditWorkspaceFragment : Fragment() {
 
 
                 override fun handleOnBackPressed() {
-                    cancelEditAndGoBack()
+                    if (guest== true){
+                        goBack()
+                    }else{
+                        cancelEditAlert()
+                    }
 
                 }
             })
 
         binding.editWorkspaceButton.setOnClickListener {
-
 
 
             val editedWorkspaceName = binding.workspaceNameEditET.text.toString()
@@ -407,7 +424,14 @@ class EditWorkspaceFragment : Fragment() {
 
             } else {
 
-                viewModel.editWorkspace(workspaceId!!, editedWorkspaceName, wT, eT, kickOthers, deleteMessages)
+                viewModel.editWorkspace(
+                    workspaceId!!,
+                    editedWorkspaceName,
+                    wT,
+                    eT,
+                    kickOthers,
+                    deleteMessages
+                )
 
 
             }

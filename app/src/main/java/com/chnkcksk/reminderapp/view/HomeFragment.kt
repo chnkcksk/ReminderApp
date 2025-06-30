@@ -2,12 +2,14 @@ package com.chnkcksk.reminderapp.view
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
+import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -55,6 +57,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -118,7 +122,7 @@ class HomeFragment : Fragment() {
 
         viewModel.getUserProviderData()
 
-
+        checkUpdate()
 
 
 
@@ -129,6 +133,64 @@ class HomeFragment : Fragment() {
         setupReminders()
         setupDrawerMenu()
 
+    }
+
+    private fun checkUpdate(){
+        val remoteConfig = FirebaseRemoteConfig.getInstance()
+        val configSettings = FirebaseRemoteConfigSettings.Builder()
+            .setMinimumFetchIntervalInSeconds(3600) // 1 saatte bir yenile
+            .build()
+        remoteConfig.setConfigSettingsAsync(configSettings)
+        remoteConfig.setDefaultsAsync(mapOf("min_required_version" to 1))
+
+        remoteConfig.fetchAndActivate()
+            .addOnCompleteListener { task ->
+
+                if (!isAdded || context == null) return@addOnCompleteListener
+
+                if (task.isSuccessful) {
+                    val minVersion = remoteConfig.getLong("min_required_version")
+
+                    val currentVersion = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        requireContext().packageManager
+                            .getPackageInfo(requireContext().packageName, 0).longVersionCode
+                    } else {
+                        @Suppress("DEPRECATION")
+                        requireContext().packageManager
+                            .getPackageInfo(requireContext().packageName, 0).versionCode.toLong()
+                    }
+
+                    if (currentVersion < minVersion) {
+                        showUpdateDialog()
+                        return@addOnCompleteListener
+                    }
+                }
+
+            }
+    }
+
+    private fun showUpdateDialog() {
+        if (!isAdded || context == null) return // Fragment hâlâ aktif mi?
+
+        val packageName = requireContext().packageName
+
+        android.app.AlertDialog.Builder(requireContext())
+            .setTitle("Güncelleme Gerekli")
+            .setMessage("Uygulamanın yeni bir sürümü mevcut. Devam etmek için lütfen güncelleyin.")
+            .setCancelable(false)
+            .setPositiveButton("Güncelle") { _, _ ->
+                val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName"))
+                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName"))
+
+                try {
+                    startActivity(marketIntent)
+                } catch (e: Exception) {
+                    startActivity(webIntent)
+                }
+
+                activity?.finish() // Güvenli versiyon
+            }
+            .show()
     }
 
 

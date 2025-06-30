@@ -30,7 +30,7 @@
                     android:fontFamily="@font/public_sans_bold"
                     android:gravity="center"
                     android:text="Home"
-                    android:textSize="18sp" />
+                    android:textSize="20sp" />
 
             </androidx.appcompat.widget.Toolbar>
 
