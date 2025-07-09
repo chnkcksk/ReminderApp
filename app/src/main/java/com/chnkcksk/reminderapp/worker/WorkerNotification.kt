@@ -17,25 +17,18 @@ class WorkerNotification(private val context: Context, params: WorkerParameters)
     Worker(context, params) {
 
     override fun doWork(): Result {
-        // inputData'dan bildirim parametrelerini alıyoruz
-        // Eğer parametre gönderilmemişse varsayılan değerler kullanılır
         val title = inputData.getString("title") ?: "Varsayılan Başlık"
         val message = inputData.getString("message") ?: "Varsayılan Mesaj"
         val channelId = inputData.getString("channelId") ?: "default_channel"
         val channelName = inputData.getString("channelName") ?: "Genel Bildirimler"
         val channelDescription = inputData.getString("channelDescription") ?: "Uygulama bildirimleri"
-        // Bildirim ikonu (varsayılan olarak Android'in info ikonu)
         val iconResId = inputData.getInt("iconResId", android.R.drawable.ic_dialog_info)
-        // Bildirimi tıklayınca otomatik kapanma ayarı (varsayılan: true)
         val autoCancel = inputData.getBoolean("autoCancel", true)
-        // Bildirim öncelik seviyesi (varsayılan: normal öncelik)
         val priority = inputData.getInt("priority", NotificationCompat.PRIORITY_DEFAULT)
-        // Titreşim ayarı (varsayılan: açık)
         val vibrate = inputData.getBoolean("vibrate", true)
-        // Ses ayarı (varsayılan: açık)
         val sound = inputData.getBoolean("sound", true)
 
-        // try-catch bloğu ile hata yönetimi
+
         return try {
             // Önce bildirim kanalını oluştur (Android 8.0+ için gerekli)
             createNotificationChannel(channelId, channelName, channelDescription)
@@ -86,7 +79,6 @@ class WorkerNotification(private val context: Context, params: WorkerParameters)
         vibrate: Boolean,        
         sound: Boolean           
     ) {
-        // Create a PendingIntent for navigation
         val pendingIntent = NavDeepLinkBuilder(context)
             .setGraph(R.navigation.core_nav_graph)
             .setDestination(R.id.homeFragment)

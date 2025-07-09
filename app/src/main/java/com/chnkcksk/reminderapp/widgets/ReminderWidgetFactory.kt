@@ -15,12 +15,10 @@ class ReminderWidgetFactory(private val context: Context) : RemoteViewsService.R
     private val itemList = mutableListOf<Reminder>()
 
     override fun onCreate() {
-        // İlk oluşturulduğunda verileri yükle
         loadData()
     }
 
     override fun onDataSetChanged() {
-        // Veri seti değiştiğinde yeniden yükle
         loadData()
     }
 
