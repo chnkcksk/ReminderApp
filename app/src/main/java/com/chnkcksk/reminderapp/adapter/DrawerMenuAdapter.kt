@@ -29,19 +29,19 @@ class DrawerMenuAdapter(
         val item = items[position]
         holder.text.text = item.title
 
-        // Workspace tipine göre icon ayarlayabilirsiniz
+        // Workspace tipine göre icon ayarla
         when (item.workspaceType) {
             "Group" -> {
                 // Personal workspace icon
-                holder.icon.setImageResource(R.drawable.baseline_group_24) // kendi icon'unuzu kullanın
+                holder.icon.setImageResource(R.drawable.baseline_group_24)
             }
             "Personal" -> {
                 // Shared workspace icon
-                holder.icon.setImageResource(R.drawable.baseline_person_24) // kendi icon'unuzu kullanın
+                holder.icon.setImageResource(R.drawable.baseline_person_24)
             }
             else -> {
                 // Default icon
-                holder.icon.setImageResource(R.drawable.baseline_person_24) // kendi icon'unuzu kullanın
+                holder.icon.setImageResource(R.drawable.baseline_person_24)
             }
         }
 

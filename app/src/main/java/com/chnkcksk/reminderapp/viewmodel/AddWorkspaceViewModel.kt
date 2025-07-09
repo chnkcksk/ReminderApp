@@ -51,7 +51,6 @@ class AddWorkspaceViewModel(application: Application) : AndroidViewModel(applica
 //    val navigateNewWorkspace2: LiveData<Boolean> get() = _navigateNewWorkspace2
 
 
-    //lifecyclescope.launch{}
 
     suspend fun createWorkspace(
         workspaceName: String,

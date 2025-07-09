@@ -19,13 +19,12 @@ import androidx.fragment.app.Fragment
 
 /**
  * TÜM ANDROID SÜRÜMLERİ İÇİN KAPSAMLI BİLDİRİM İZNİ YÖNETİCİSİ
- * Her sayfada özelleştirilebilir bildirim içeriği ile
  */
 class NotificationPermissionManager {
 
-    /**
-     * Özelleştirilebilir bildirim içeriği ayarları
-     */
+
+     //Özelleştirilebilir bildirim içeriği ayarları
+
     data class NotificationContent(
         val title: String = "Varsayılan Bildirim",
         val message: String = "Bu bir test bildirimidir",

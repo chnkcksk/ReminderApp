@@ -74,40 +74,6 @@ class LoadingManager private constructor() {
         }, DISPLAY_DELAY)
     }
 
-    fun showLoadingQuick(
-        context: Context,
-        message: String = "Loading..",
-        timeout: Long = DEFAULT_TIMEOUT
-    ) {
-        // İstek zamanını kaydet
-        isLoadingRequested = true
-        requestStartTime = System.currentTimeMillis()
-
-        // Mevcut dialogu temizle
-        if (loadingDialog?.isShowing == true) {
-            dismissLoading()
-        }
-
-        // 200ms gecikmeli gösterim için handler kullan
-        displayHandler.removeCallbacksAndMessages(null)
-        displayHandler.postDelayed({
-            // Eğer hala yükleme gösterilmesi gerekiyorsa
-            if (isLoadingRequested) {
-                createAndShowDialog(context, message)
-
-                // Zaman aşımı kontrolü
-                timeoutHandler.postDelayed({
-                    dismissLoading()
-                    // Zaman aşımında toast mesajı göster
-                    if (context is Activity && !context.isFinishing) {
-                        Toast.makeText(context, "This operation has timed out", Toast.LENGTH_SHORT)
-                            .show()
-                    }
-                }, timeout)
-            }
-        }, 0L)
-    }
-
     private fun createAndShowDialog(context: Context, message: String) {
         // Yeni dialog oluştur
         loadingDialog = Dialog(context)

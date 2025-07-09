@@ -25,13 +25,9 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
     private val firestore = Firebase.firestore
 
 
-
-
-    // 🎯 UI Event için SharedFlow
     private val _uiEvent = MutableSharedFlow<UiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
 
-    // 🎯 UI Eventleri için sealed class
     sealed class UiEvent {
         object ShowLoading : UiEvent()
         object HideLoading : UiEvent()
@@ -40,8 +36,6 @@ class AddReminderViewModel(application: Application) : AndroidViewModel(applicat
         object SetNotification : UiEvent()
         object ReminderAdded:UiEvent()
     }
-
-
 
 
     fun addReminder(

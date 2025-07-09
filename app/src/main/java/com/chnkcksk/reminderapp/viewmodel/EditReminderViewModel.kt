@@ -22,7 +22,6 @@ import kotlinx.coroutines.tasks.await
 
 class EditReminderViewModel(application: Application) : AndroidViewModel(application) {
 
-    //UI State Data Class + StateFlow/LiveData
 
     sealed class UiEvent {
         object ReminderEdited : UiEvent()

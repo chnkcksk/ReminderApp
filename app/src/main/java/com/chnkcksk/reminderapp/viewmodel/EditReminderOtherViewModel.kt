@@ -43,9 +43,8 @@ class EditReminderOtherViewModel(application: Application) : AndroidViewModel(ap
         ) : UiEvent()
     }
 
-    // UI'a gönderilecek eventleri tutmak için kullanılan akış (SharedFlow) - birden fazla kez tüketilebilir.
     private val _uiEvent = MutableSharedFlow<UiEvent>()
-    val uiEvent = _uiEvent.asSharedFlow() // Dışarıya sadece okunabilir versiyonu veriliyor.
+    val uiEvent = _uiEvent.asSharedFlow()
 
     private val currentUser = auth.currentUser
 
