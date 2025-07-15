@@ -1,6 +1,7 @@
 package com.chnkcksk.reminderapp.viewmodel
 
 import android.app.Application
+import android.graphics.Color
 import android.text.method.PasswordTransformationMethod
 import android.widget.EditText
 import android.widget.ImageButton
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlin.random.Random
 
 class RegisterViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -84,6 +86,8 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
+
+
 
     fun togglePasswordVisibility(editText: EditText, toggleButton: ImageButton) {
         if (editText.transformationMethod is PasswordTransformationMethod) {

@@ -347,8 +347,6 @@ class AppPreferencesFragment : Fragment() {
     }
 
 
-
-
     private fun updateSwitchState() {
         context?.let { ctx ->
             isUpdatingSwitch = true

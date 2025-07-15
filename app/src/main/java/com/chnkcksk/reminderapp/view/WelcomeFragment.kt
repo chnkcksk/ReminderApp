@@ -1,6 +1,7 @@
 package com.chnkcksk.reminderapp.view
 
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -11,8 +12,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import androidx.navigation.Navigation
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DecodeFormat
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.chnkcksk.reminderapp.MainNavGraphDirections
+import com.chnkcksk.reminderapp.R
 import com.chnkcksk.reminderapp.databinding.FragmentWelcomeBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -49,7 +55,18 @@ class WelcomeFragment : Fragment() {
 
         checkSession()
 
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P){
 
+            Glide.with(this)
+                .load(R.drawable.welcome_image)
+                .override(300,300)
+                .diskCacheStrategy(DiskCacheStrategy.ALL) // Disk önbelleğini etkinleştir
+                .format(DecodeFormat.PREFER_ARGB_8888) // Yüksek kalite formatı
+                .into(binding.imageView)
+
+        }else{
+            binding.imageView.setImageDrawable(ContextCompat.getDrawable(requireContext(), R.drawable.welcome_image))
+        }
 
 
 
@@ -83,12 +100,6 @@ class WelcomeFragment : Fragment() {
 
         }
     }
-
-
-
-
-
-
 
 
     override fun onDestroy() {

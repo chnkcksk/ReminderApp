@@ -33,14 +33,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         data class ShowToast(val message: String) : UiEvent()
         data class ReminderList(val reminderList: ArrayList<Reminder>) : UiEvent()
         data class WorkspaceList(val workspaceList: ArrayList<DrawerMenuItem>) : UiEvent()
-
     }
 
     private val _uiEvent = MutableSharedFlow<UiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
 
     private val _isGoogleUser = MutableLiveData<Boolean>()
-    val isGoogleUser : LiveData<Boolean> get() = _isGoogleUser
+    val isGoogleUser: LiveData<Boolean> get() = _isGoogleUser
 
 
 //    private val _reminderList = MutableLiveData<ArrayList<Reminder>>()
@@ -48,7 +47,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 //
 //    private val _workspaceList = MutableLiveData<ArrayList<DrawerMenuItem>>()
 //    val workspaceList: LiveData<ArrayList<DrawerMenuItem>> get() = _workspaceList
-
 
 
     fun getUserProviderData() {
@@ -62,6 +60,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 _uiEvent.emit(UiEvent.ShowToast("Current user is null"))
                 return@launch
             }
+
+
+
+
+
+
 
             currentUser.providerData.forEach { profile ->
                 if (profile.providerId == "google.com") {

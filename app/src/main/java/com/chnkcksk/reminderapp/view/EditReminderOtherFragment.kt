@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
@@ -41,6 +42,7 @@ class EditReminderOtherFragment : Fragment() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
+    private lateinit var userName: String
 
     private var workspaceId: String? = null
     private var reminderId: String? = null
@@ -57,6 +59,8 @@ class EditReminderOtherFragment : Fragment() {
 
         auth = Firebase.auth
         firestore = Firebase.firestore
+
+        userName = auth.currentUser?.displayName.toString()
 
         arguments?.let {
             workspaceId = EditReminderOtherFragmentArgs.fromBundle(it).workspaceId
@@ -78,6 +82,8 @@ class EditReminderOtherFragment : Fragment() {
         if (!NetworkHelper.isInternetAvailable(requireContext())) {
             NetworkHelper.showNoInternetDialog(requireContext(), requireView(), requireActivity())
         }
+
+        binding.linearLayout9.isVisible = false
 
         viewModel.loadReminderData(workspaceId, reminderId)
         viewModel.loadWorkspaceData(workspaceId)
@@ -227,6 +233,14 @@ class EditReminderOtherFragment : Fragment() {
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
+                        //creator name
+                        binding.creatorNameTV.setText(event.creatorName)
+                        //last edited
+                        if (event.lastEditedBy!="" ){ //&& !event.creatorName.equals(event.lastEditedBy, ignoreCase = true)
+                                binding.linearLayout9.isVisible = true
+                                binding.editorNameTV.setText(event.lastEditedBy)
+                        }
+
                     }
 
                     is EditReminderOtherViewModel.UiEvent.WorkspaceInformations -> {
@@ -284,6 +298,7 @@ class EditReminderOtherFragment : Fragment() {
                 val priority = binding.priorityOSpinner.selectedItem.toString()
                 val date = binding.editReminderODate.text.toString()
                 val time = binding.editReminderOTime.text.toString()
+                val lastEditedBy = userName
 
 
                 viewModel.editReminderData(
@@ -293,7 +308,8 @@ class EditReminderOtherFragment : Fragment() {
                     desc,
                     priority,
                     date,
-                    time
+                    time,
+                    lastEditedBy
                 )
 
 

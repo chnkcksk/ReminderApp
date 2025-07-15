@@ -37,6 +37,7 @@ class AddReminderOtherFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var auth: FirebaseAuth
+    private lateinit var userName: String
 
     private val loadingManager = LoadingManager.getInstance()
 
@@ -48,6 +49,8 @@ class AddReminderOtherFragment : Fragment() {
         super.onCreate(savedInstanceState)
 
         auth = Firebase.auth
+
+        userName = auth.currentUser?.displayName.toString()
 
         arguments?.let {
             workspaceId = AddReminderOtherFragmentArgs.fromBundle(it).workspaceId
@@ -182,6 +185,7 @@ class AddReminderOtherFragment : Fragment() {
             val priority = binding.prioritySpinnerOther.selectedItem.toString()
             val selectedDate = binding.addReminderDateOther.text.toString()
             val selectedTime = binding.addReminderTimeOther.text.toString()
+            val creatorName = userName
 
             if (title.isEmpty()) {
                 Toast.makeText(requireContext(), "Please fill in the title value!", Toast.LENGTH_LONG)
@@ -196,7 +200,8 @@ class AddReminderOtherFragment : Fragment() {
                     description,
                     priority,
                     selectedDate,
-                    selectedTime
+                    selectedTime,
+                    creatorName
                 )
 
 

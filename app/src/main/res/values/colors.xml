@@ -13,6 +13,23 @@
     <color name="reminder_et_bg_color">#F5F0E5</color>
     <color name="slider_color">#63986B</color>
 
+    <color name="avatar_bg_1">#FFB3BA</color>   <!-- Pastel pembe -->
+    <color name="avatar_bg_2">#FFDFBA</color>   <!-- Pastel şeftali -->
+    <color name="avatar_bg_3">#FFFFBA</color>   <!-- Pastel sarı -->
+    <color name="avatar_bg_4">#BAFFC9</color>   <!-- Pastel yeşil -->
+    <color name="avatar_bg_5">#BAE1FF</color>   <!-- Pastel mavi -->
+    <color name="avatar_bg_6">#E0BBE4</color>   <!-- Lila -->
+    <color name="avatar_bg_7">#D5AAFF</color>   <!-- Pastel mor -->
+    <color name="avatar_bg_8">#C2F0FC</color>   <!-- Buz mavisi -->
+    <color name="avatar_bg_9">#FFD8BE</color>   <!-- Sıcak pastel turuncu -->
+    <color name="avatar_bg_10">#D6F5D6</color>  <!-- Nane yeşili -->
+    <color name="avatar_bg_11">#FFF5BA</color>  <!-- Limon sarısı -->
+    <color name="avatar_bg_12">#F4C2C2</color>  <!-- Toz pembe -->
+    <color name="avatar_bg_13">#ACE7FF</color>  <!-- Açık mavi -->
+    <color name="avatar_bg_14">#C5FAD5</color>  <!-- Pastel mint -->
+    <color name="avatar_bg_15">#FFD1DC</color>  <!-- Açık pembe -->
+    <color name="avatar_bg_16">#E6E6FA</color>  <!-- Lavanta -->
+
 
 
     <color name="red">#FAA0A0</color>

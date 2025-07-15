@@ -34,7 +34,9 @@ class EditReminderOtherViewModel(application: Application) : AndroidViewModel(ap
             val description: String,
             val priority: String,
             val selectedDate: String,
-            val selectedTime: String
+            val selectedTime: String,
+            val creatorName: String,
+            val lastEditedBy: String
         ) : UiEvent()
 
         data class WorkspaceInformations(
@@ -129,7 +131,8 @@ class EditReminderOtherViewModel(application: Application) : AndroidViewModel(ap
         description: String,
         priority: String,
         date: String,
-        time: String
+        time: String,
+        lastEditedBy: String
     ) {
 
         viewModelScope.launch {
@@ -150,6 +153,7 @@ class EditReminderOtherViewModel(application: Application) : AndroidViewModel(ap
                 "priority" to priority,
                 "date" to date,
                 "time" to time,
+                "lastEditedBy" to lastEditedBy
             )
             try {
                 firestore
@@ -199,7 +203,9 @@ class EditReminderOtherViewModel(application: Application) : AndroidViewModel(ap
                             description = doc.getString("description") ?: "",
                             priority = doc.getString("priority") ?: "",
                             selectedDate = doc.getString("date") ?: "",
-                            selectedTime = doc.getString("time") ?: ""
+                            selectedTime = doc.getString("time") ?: "",
+                            creatorName = doc.getString("creatorName") ?: "",
+                            lastEditedBy = doc.getString("lastEditedBy") ?: ""
                         )
                     )
                     _uiEvent.emit(UiEvent.HideLoading)

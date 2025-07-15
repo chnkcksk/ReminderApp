@@ -413,7 +413,7 @@ class HomeFragment : Fragment() {
         val avatarBitmap = createInitialsAvatar(
             initials = initials,
             size = 200,
-            backgroundColor = Color.parseColor("#DFCEA0"),
+            backgroundColor = Color.parseColor("#EBAB16"),
             textColor = Color.WHITE
         )
 
@@ -560,7 +560,7 @@ class HomeFragment : Fragment() {
         // Yazı (baş harfler)
         paint.apply {
             color = textColor
-            textSize = size / 2f
+            textSize = size / 2.5f
             typeface = Typeface.DEFAULT_BOLD
             textAlign = Paint.Align.CENTER
         }

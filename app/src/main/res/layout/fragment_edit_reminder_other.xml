@@ -195,6 +195,68 @@
 
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/linearLayout8"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout5">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="16dp"
+                android:layout_weight="1"
+                android:fontFamily="@font/public_sans"
+                android:text="Created By"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/creatorNameTV"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginRight="16dp"
+                android:fontFamily="@font/public_sans"
+                android:text=""
+                android:textSize="16sp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linearLayout9"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout8">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="16dp"
+                android:layout_weight="1"
+                android:fontFamily="@font/public_sans"
+                android:text="Last Edited By"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/editorNameTV"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginRight="16dp"
+                android:fontFamily="@font/public_sans"
+                android:text=""
+                android:textSize="16sp" />
+
+        </LinearLayout>
+
         <TextView
             android:id="@+id/textView14"
             android:layout_width="wrap_content"
@@ -205,7 +267,7 @@
             android:text="Workspace"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/linearLayout5" />
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout9" />
 
         <LinearLayout
             android:id="@+id/linearLayout6"
@@ -268,6 +330,8 @@
                 android:textSize="16sp" />
 
         </LinearLayout>
+
+
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/editReminderOButton"

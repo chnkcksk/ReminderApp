@@ -41,7 +41,8 @@ class AddReminderOtherViewModel(application: Application) : AndroidViewModel(app
         description: String,
         priority: String,
         date: String,
-        time: String
+        time: String,
+        creatorName: String
     ) {
         viewModelScope.launch {
 
@@ -60,7 +61,8 @@ class AddReminderOtherViewModel(application: Application) : AndroidViewModel(app
                 "isCompleted" to false,
                 "priority" to priority,
                 "date" to date,
-                "time" to time
+                "time" to time,
+                "creatorName" to creatorName
             )
 
             try {

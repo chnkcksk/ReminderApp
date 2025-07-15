@@ -3,6 +3,7 @@ package com.chnkcksk.reminderapp.viewmodel
 import android.app.Activity
 import android.app.Application
 import android.content.Intent
+import android.graphics.Color
 import android.provider.ContactsContract.CommonDataKinds.Email
 import android.text.method.PasswordTransformationMethod
 import android.util.Log
@@ -170,6 +171,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         // İmleci metnin sonuna taşı
         editText.setSelection(editText.text.length)
     }
+
 
     fun login(email: String, password: String) {
 

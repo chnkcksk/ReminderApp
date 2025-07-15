@@ -10,6 +10,10 @@
         <item name="colorSecondary">@color/secondary_color</item>
         <item name="colorOnSecondary">@color/primary_text_color</item>
 
+        <item name="android:statusBarColor">@color/edittext_color</item>
+
+
+
         <!-- SplashScreen temasını belirt -->
         <item name="android:windowSplashScreenBackground" tools:ignore="NewApi">#FEF4E0</item>
         <!-- (Opsiyonel) Splash ekran logosu -->
